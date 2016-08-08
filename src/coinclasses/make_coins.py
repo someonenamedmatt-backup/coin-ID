@@ -4,14 +4,13 @@ import os
 from multiprocessing import Manager
 import multiprocessing as mp
 import cPickle as pickle
-
 bad_coins = Manager().list()
 
 def make_coins(input_folder, output_folder, bad_coin_file, csv_file=None, find_circle=False, size=(128,128)):
     #goes through a directory and makes a coin object for every file in input folder intersect csv_file (optional)
     #find_circles and size let you choose if you want to crop the image using find_circles and what size you want
     if not os.path.exists(output_folder):
-        os.makdirs(output_folder)
+        os.makedirs(output_folder)
     file_list = os.listdir(input_folder)
     if csv_file is not None:
         df = pd.read_csv(csv_file).set_index(['ID'])
@@ -26,12 +25,23 @@ def make_coins(input_folder, output_folder, bad_coin_file, csv_file=None, find_c
 def make_coin((file, find_circle, size, output_folder)):
     #takes file and options and makes a single coin in output folder
     #takes them as a tuple for multiprocessing to work properly
-    c = Coin().make_from_image(file, find_circle, size)
-    if type(c) == bool:
-        bad_coins.append(.split('/')[-1][:-4])
-    else:
-        coin_name = file.split('/')[-1]
-        c.save(output_folder+coin_name[:-4])
+    if os.path.exists('output_folder+coin_name[:-4]'):
+        return True
+    try:
+        c = Coin().make_from_image(file, find_circle, size)
+
+        if type(c) == bool:
+            bad_coins.append(file.split('/')[-1][:-4])
+        else:
+            coin_name = file.split('/')[-1]
+        try:
+            c.save(output_folder+coin_name[:-4])
+        except:
+            bad_coins.append(file.split('/')[-1][:-4])
+    except:
+        bad_coins.append(file.split('/')[-1][:-4])
+
+
 
 def clean_csv(csv_file, output_file):
     #takes the csv file from the scraper and cleans it up
@@ -81,6 +91,6 @@ def clean_csv(csv_file, output_file):
     df[['ID','grade_lbl']].to_csv(output_file+'full.csv')
 
 if __name__ == '__main__':
-    make_coins('/data2/whole/', '/data2/processed/cropped/', '/home/ubuntu/bad_coins_whole.pkl', csv_file=None, find_circle=False, size=(128,128))
-    make_coins('/data2/whole/', '/data2/processed/whole/', '/home/ubuntu/bad_coins_whole.pkl', csv_file=None, find_circle=False, size=(128,128))
+    make_coins('/data/whole/', '/data2/processed/cropped/', '/home/ubuntu/bad_coins_whole.pkl', csv_file='/coin/data/ebay_coin_data_initial', find_circle=False, size=(128,128))
+    make_coins('/data/whole/', '/data2/processed/whole/', '/home/ubuntu/bad_coins_whole.pkl', csv_file='/coin/data/ebay_coin_data_initial', find_circle=False, size=(128,128))
     clean_csv('/home/ubuntu/coin/data/ebay_coin_data_initial.csv', '/home/ubuntu/coin/data/coin_data.csv')

@@ -1,0 +1,16 @@
+{
+  "uploadOnSave": true,
+  "useAtomicWrites": false,
+  "deleteLocal": false,
+  "hostname": "54.197.98.27",
+  "port": "22",
+  "target": "/home/ubuntu/coin/",
+  "ignore": [
+    ".git/**",
+    "/remote-sync.json"
+  ],
+  "username": "ubuntu",
+  "keyfile": "/Users/Matt/.ssh/matt-east.pem",
+  "watch": [],
+  "transport": "scp"
+}
