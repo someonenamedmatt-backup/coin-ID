@@ -1,0 +1,4 @@
+from __future__ import division
+import os
+
+def read_coin(filename_queue):

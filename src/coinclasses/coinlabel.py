@@ -31,22 +31,6 @@ class CoinLabel:
                                          random_state = random_state)
         self.label_dct = df['label'].to_dict()
         self.n_labels = len(self.train_df.unique())
-        #flip this to false if you want to get test data when iterating
-        self.train_flag = True
-
-    def __iter__(self):
-        while True:
-            if self.train_flag:
-                for f in self.train_df.index.values:
-                    yield np.load(f),self.label_dct[f]
-                    if not self.train_flag:
-                        break
-            else:
-                for f in self.test_df.index.values:
-                    yield np.load(f),self.label_dct[f]
-                    if self.train_flag:
-                        break
-
 
     def get_class_weights(self):
         return [len(self.train_df)/len(self.train_df[self.train_df == value])

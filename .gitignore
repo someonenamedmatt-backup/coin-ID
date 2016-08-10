@@ -1,6 +1,8 @@
 *.pyc
 data/*
+!.gitignore
 model/saves/*
+!.gitignore
 *.ckpt
 *.DS_Store
 # Byte-compiled / optimized / DLL files

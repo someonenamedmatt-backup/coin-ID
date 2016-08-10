@@ -12,6 +12,24 @@ def pad_radian(layer, pad_width, pad_dist):
     l = tf.pad(l,[[0,0],[0,pad_width],[0,0],[0,0]],"CONSTANT")
     return (l)
 
+def get_conv(name, input, width, height, dim, reuse=False, pool=True):
+    """ Get convolution to find features in a convolution """
+    with tf.variable_scope(name, reuse=reuse) as scope:
+        kernel = tf.get_variable("weights", shape=[width, height, input.get_shape()[3].value, dim], initializer=tf.contrib.layers.xavier_initializer())
+        conv = tf.nn.conv2d(input, kernel, [1,1,1,1], padding='SAME')
+        b = tf.get_variable("bias",shape=[dim])
+        conv = tf.nn.bias_add(conv, b)
+        conv = tf.nn.relu(conv)
+        _activation_summary(conv)
+    return (conv)
+
+def get_pool_and_lrn(input, num):
+        l = tf.nn.max_pool(input, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
+                               padding='SAME', name='pool'+str(num))
+        output = tf.nn.lrn(l, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+                                                  name='norm'+str(num))
+        return output
+
 def get_radian_conv(name, input, width, height, dim, pad=True,reuse=False, pool=True):
     """ Get convolution to find features in a convolution """
     with tf.variable_scope(name, reuse=reuse) as scope:
@@ -25,14 +43,16 @@ def get_radian_conv(name, input, width, height, dim, pad=True,reuse=False, pool=
         _activation_summary(conv)
     return (conv)
 
-def get_radian_pool(input):
-    pool = tf.nn.max_pool(input, [1,2,2,1],[1,2,2,1],'VALID')
+def get_radian_pool(input, num):
+    pool = tf.nn.max_pool(input, [1,2,2,1],[1,2,2,1],'VALID', name = 'pool' + str(num))
     return pool
 
 def get_dense_layer_relu(name, input, dim, reuse=False):
     with tf.variable_scope(name, reuse=reuse):
         input_ = tf.reshape(input, [input.get_shape()[0].value,-1])
         w = tf.get_variable("w", shape=[input_.get_shape()[1].value,dim], initializer=tf.contrib.layers.xavier_initializer() )
+        weight_decay = tf.mul(tf.nn.l2_loss(w), wd, name='weight_loss')
+        tf.add_to_collection('losses', weight_decay)
         b = tf.get_variable("b", shape=[dim])
         output = tf.nn.relu(tf.matmul(input_,w) + b)
         _activation_summary(output)
@@ -105,23 +125,6 @@ def loss(logits, labels):
     # The total loss is defined as the cross entropy loss plus all of the weight
     # decay terms (L2 loss).
     return tf.add_n(tf.get_collection('losses'), name='total_loss')
-
-def get_file_list(folder, csv_file, test_pct, label_col):
-    #returns a list of files, their labels,
-    #and if they're in the training or test set
-    print folder
-    if folder[-1] != '/':
-        folder += '/'
-    print csv_file
-    df = pd.read_csv(csv_file)[['ID',label_col]]
-
-    print df.head()
-    df['file_names'] = map((lambda x:  str(x)),df['ID'])
-    df = df[df['file_names'].isin(set(df['file_names']).intersection(set(os.listdir(folder))))]
-    df['file_names'] = map(lambda x: folder + str(int(x)) + '/',df['file_names'])
-    print df.head()
-
-    return train_test_split(df[['file_names',label_col]], test_size = test_pct, stratify = df[label_col], random_state = 22)
 
 def add_loss_summaries(total_loss):
   """Add summaries for losses in CIFAR-10 model.
