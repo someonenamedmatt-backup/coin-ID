@@ -133,19 +133,21 @@ def convert_coin_bin(f):
 
 def add_label():
     df = pd.read_csv('/home/ubuntu/coin/data/IDlabel.csv').set_index('ID')['grade_lbl'].to_dict()
+    bad_list = []
     for subdir, dirs, files in os.walk('/data2/processed'):
         for name in files:
-            if name in ['img', 'rad']:
-                label = df[int(subdir.split('/')[-1])]
-                value = np.fromfile(os.path.join(subdir,name))
-                if len(value) == 128*128*3:
-                    np.append(value,label).tofile(name)
-            elif name in ['img.npy', 'rad.npy']:
-                label = df[int(subdir.split('/')[-1])]
-                value = np.load(os.path.join(subdir,name)).flatten()
-                np.append(value,label).tofile(name[:-4])
-
-
+            try:
+                if name in ['img', 'rad']:
+                    label = df[int(subdir.split('/')[-1])]
+                    value = np.fromfile(os.path.join(subdir,name))
+                    if len(value) == 128*128*3:
+                        np.append(value,label).tofile(name)
+                elif name in ['img.npy', 'rad.npy']:
+                    label = df[int(subdir.split('/')[-1])]
+                    value = np.load(os.path.join(subdir,name)).flatten()
+                    np.append(value,label).tofile(name[:-4])
+            except:
+                bad_list.append(os.path.join(subdir,name))
 
 
 if __name__ == '__main__':
