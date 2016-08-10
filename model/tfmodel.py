@@ -14,6 +14,8 @@ class TFModel(object):
         self.batch_size = batch_size
         self.num_epochs_per_decay = num_epochs_per_decay
         self.save_dir = save_dir
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         self.moving_average_decay = moving_average_decay
 
     def fit_test_0(self, coinlabel):

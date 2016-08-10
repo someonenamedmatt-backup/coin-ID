@@ -5,6 +5,8 @@ from multiprocessing import Manager
 import multiprocessing as mp
 import cPickle as pickle
 import numpy as np
+import cPickle as pickle
+
 bad_coins = Manager().list()
 
 def make_coins(input_folder, output_folder, bad_coin_file, csv_file=None, find_circle=False, size=(128,128)):
@@ -64,7 +66,7 @@ def convert_coin(f):
         raise
 
 
-def clean_csv(csv_file, output_file):
+def clean_csv(csv_file, output_folder = None, save = False):
     #takes the csv file from the scraper and cleans it up
     #finds PCGA Grades and makes grade_lbl
     #saves outputfile.csv and outputfile_full.csv
@@ -93,9 +95,14 @@ def clean_csv(csv_file, output_file):
             return 2
         else:
             return 3
-
-    non_grades = [5,7,16]
-    df = pd.read_csv(csv_file, index_col = 0)
+    def get_name(lst):
+        for item in lst:
+            if item in ['Two Cents', 'Three Cents', 'Twenty Cent Pieces', 'Colonial', 'America the Beautiful 2010-Now']:
+                return item
+            elif '(' in item and ')' in item and 'Proof' not in item and 'See more' not in item:
+                return item
+        return 'None'
+    df = pd.read_csv(csv_file)
     df['categories']=map(lambda str: eval(str.replace(';',',')),df['Ebay Categories'])
     df['attributes']=map(lambda str: eval(str.replace(';',',')),df['Attributes'])
     #Filter out collections
@@ -106,10 +113,18 @@ def clean_csv(csv_file, output_file):
     df = df[df['Grade']!=0]
     df = df[(~df['Grade'].isin(non_grades))&(df['Grade']<=70)]
     df['grade_lbl'] = df['Grade'].map(make_label)
-    # bad_coin_list = map(lambda str: int(str), filter(lambda str: len(str) > 0, list(bad_coins)))
-    # df=df[not df['ID'].isin(set(bad_coin_list))]
-    df[['ID','grade_lbl']].to_csv(output_file+'.csv')
-    df[['ID','grade_lbl']].to_csv(output_file+'full.csv')
+    df = df[df['Ebay Categories'].isin(filter(lambda str: 'Errors' not in str, df['Ebay Categories']))]
+    df['coin_name'] = df['categories'].map(get_name)
+    name_dct = {x:i for i,x  in enumerate(df['coin_name'].unique())}
+    df['name_lbl'] = df['coin_name'].map(name_dct.get)
+    grade_dct = {x: df[df['Grade'] == x ]['grade_lbl'].unique()[0] for x in df['Grade'].unique()}
+    if save:
+        df[['ID','grade_lbl']].to_csv(output_folder+'IDgrade.csv')
+        df[['ID','name_lbl']].to_csv(output_folder+'IDname.csv')
+        df[['ID','name_lbl','grade_lbl']].to_csv(output_folder+'IDnamegrade.csv')
+        pickle.dump(name_dct, open(output_folder+'name_dct.pkl','wb'))
+        pickle.dump(grade_dct, open(output_folder+'grade_dct.pkl','wb'))
+    return df
 
 def convert_coins_bin():
     #goes through a folder and makes all the coins in it into the new coin format
@@ -131,23 +146,42 @@ def convert_coin_bin(f):
     except:
         pass
 
-def add_label():
-    df = pd.read_csv('/home/ubuntu/coin/data/IDlabel.csv').set_index('ID')['grade_lbl'].to_dict()
+def add_labels():
+    df = pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv').set_index('ID')
+    global grade_dct, name_dct
+    grade_dct = df['grade_lbl'].to_dict()
+    name_dct = df['name_lbl'].to_dict()
     bad_list = []
-    for subdir, dirs, files in os.walk('/data2/processed'):
-        for name in files:
+    file_list = [os.path.join(subdir,name) for name in files for subdir, dirs, files in os.walk('/data2/processed')]
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(add_label,file_list)
+    pool.close()
+    pool.join()
+
+bad_value = Manager().list()
+not_in_dict = Manager().list()
+
+def add_label(f):
+    try:
+        ID, typ = f.split('/')[-2:]
+        if typ in ['img', 'rad']:
             try:
-                if name in ['img', 'rad']:
-                    label = df[int(subdir.split('/')[-1])]
-                    value = np.fromfile(os.path.join(subdir,name))
-                    if len(value) == 128*128*3:
-                        np.append(value,label).tofile(name)
-                elif name in ['img.npy', 'rad.npy']:
-                    label = df[int(subdir.split('/')[-1])]
-                    value = np.load(os.path.join(subdir,name)).flatten()
-                    np.append(value,label).tofile(name[:-4])
+                value = np.fromfile(f)
             except:
-                bad_list.append(os.path.join(subdir,name))
+                bad_value.append(ID)
+            try:
+                if len(value) == 128*128*3:
+                    np.append(value,grade_dct[ID],name_dct[ID]).tofile(f)
+                elif len(value) == 128*128*3 +1:
+                    np.append(value,[grade_dct[ID],name_dct[ID]]).tofile(f)
+            except:
+                not_in_dict.append(ID)
+        elif name in ['img.npy', 'rad.npy']:
+                value = np.load(f).flatten()
+                np.append(value,[grade_dct[ID],name_dct[ID]]).tofile(f[:-4])
+    except:
+        bad_coins.append(f)
+
 
 
 if __name__ == '__main__':
