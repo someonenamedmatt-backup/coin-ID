@@ -4,6 +4,7 @@ import os
 from multiprocessing import Manager
 import multiprocessing as mp
 import cPickle as pickle
+import numpy as np
 bad_coins = Manager().list()
 
 def make_coins(input_folder, output_folder, bad_coin_file, csv_file=None, find_circle=False, size=(128,128)):
@@ -13,7 +14,7 @@ def make_coins(input_folder, output_folder, bad_coin_file, csv_file=None, find_c
         os.makedirs(output_folder)
     file_list = os.listdir(input_folder)
     if csv_file is not None:
-        df = pd.read_csv(csv_file).set_index(['ID'])
+        df = pd.read_csv(csv_file)
         file_list = list(set(file_list).intersection(set(df['ID'].map(lambda id: str(id)+ '.jpg'))))
     file_list = map(lambda id: (input_folder + id,find_circle,size, output_folder),file_list)
     pool = mp.Pool(mp.cpu_count())
@@ -41,6 +42,26 @@ def make_coin((file, find_circle, size, output_folder)):
     except:
         bad_coins.append(file.split('/')[-1][:-4])
 
+def convert_coins(folder):
+    #goes through a folder and makes all the coins in it into the new coin format
+    coins = filter(lambda str: 'npy' in str, os.listdir(folder))
+    coins = map(lambda str: folder + str[:-4], coins)
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(convert_coin,folder)
+    pool.close()
+    pool.join()
+    print len(list(bad_coins))
+
+def convert_coin(f):
+    try:
+        coin = Coin().load(f + '.npy')
+        os.mkdir(f)
+        np.save(f + '/img', coin.img)
+        np.save(f + '/rad', coin.rad)
+        os.remove(f + '.npy')
+    except:
+        bad_coins.append(f.split('/')[-1])
+        raise
 
 
 def clean_csv(csv_file, output_file):
@@ -85,12 +106,47 @@ def clean_csv(csv_file, output_file):
     df = df[df['Grade']!=0]
     df = df[(~df['Grade'].isin(non_grades))&(df['Grade']<=70)]
     df['grade_lbl'] = df['Grade'].map(make_label)
-    bad_coin_list = map(lambda str: int(str.split('/')[-1][:-4]), list(bad_coins))
-    df=df[df['ID'].isin(set(bad_coin_list))]
+    # bad_coin_list = map(lambda str: int(str), filter(lambda str: len(str) > 0, list(bad_coins)))
+    # df=df[not df['ID'].isin(set(bad_coin_list))]
     df[['ID','grade_lbl']].to_csv(output_file+'.csv')
     df[['ID','grade_lbl']].to_csv(output_file+'full.csv')
 
+def convert_coins_bin():
+    #goes through a folder and makes all the coins in it into the new coin format
+    coins1 = map(lambda str: '/data2/processed/cropped/' + str + '/', os.listdir('/data2/processed/cropped'))
+    coins2 = map(lambda str: '/data2/processed/whole/' + str + '/', os.listdir('/data2/processed/whole'))
+    coins = coins1 + coins2
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(convert_coin_bin, coins)
+    pool.close()
+    pool.join()
+
+def convert_coin_bin(f):
+    try:
+        if os.path.exists(f+'img'):
+            np.load(f + 'img.npy').tofile(f+'img')
+            np.load(f + 'rad.npy').tofile(f+'rad')
+            os.remove(f + 'img.npy')
+            os.remove(f + 'rad.npy')
+    except:
+        pass
+
+def add_label():
+    df = pd.read_csv('/home/ubuntu/coin/data/IDlabel.csv').set_index('ID')['grade_lbl'].to_dict()
+    for subdir, dirs, files in os.walk('/data2/processed'):
+        for name in files:
+            if name in ['img', 'rad']:
+                label = df[int(subdir.split('/')[-1])]
+                value = np.fromfile(os.path.join(subdir,name))
+                if len(value) == 128*128*3:
+                    np.append(value,label).tofile(name)
+            elif name in ['img.npy', 'rad.npy']:
+                label = df[int(subdir.split('/')[-1])]
+                value = np.load(os.path.join(subdir,name)).flatten()
+                np.append(value,label).tofile(name[:-4])
+
+
+
+
 if __name__ == '__main__':
-    make_coins('/data/whole/', '/data2/processed/cropped/', '/home/ubuntu/bad_coins_whole.pkl', csv_file='/coin/data/ebay_coin_data_initial', find_circle=False, size=(128,128))
-    make_coins('/data/whole/', '/data2/processed/whole/', '/home/ubuntu/bad_coins_whole.pkl', csv_file='/coin/data/ebay_coin_data_initial', find_circle=False, size=(128,128))
-    clean_csv('/home/ubuntu/coin/data/ebay_coin_data_initial.csv', '/home/ubuntu/coin/data/coin_data.csv')
+    pass
