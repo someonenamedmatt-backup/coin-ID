@@ -8,7 +8,7 @@ from scipy import misc
 import multiprocessing as mp
 import pandas as pd
 import cv2
-
+#test
 class Coin:
     #class for storing info about a single coin
     def __init__(self, img = None, rad = None):
@@ -18,7 +18,7 @@ class Coin:
         '''
         self.img = img
         self.rad = rad
-
+        
     def save(self, file_name):
         #saves as filename
         #in npy format
