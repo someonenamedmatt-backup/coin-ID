@@ -227,7 +227,7 @@ class TFModel(object):
                 summary.ParseFromString(sess.run(summary_op))
                 summary.value.add(tag='Precision @ 1', simple_value=precision)
                 summary_writer.add_summary(summary, global_step)
-                except Exception as e:  # pylint: disable=broad-except
-                    coord.request_stop(e)
-                coord.request_stop()
-                coord.join(threads, stop_grace_period_secs=10)
+            except Exception as e:  # pylint: disable=broad-except
+                coord.request_stop(e)
+            coord.request_stop()
+            coord.join(threads, stop_grace_period_secs=10)
