@@ -126,9 +126,8 @@ class TFModel(object):
                     global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
                 else:
                     global_step = tf.Variable(0, trainable=False)
-
-                except:
-                    global_step = tf.Variable(0, trainable=False)
+            except:
+                global_step = tf.Variable(0, trainable=False)
         tf.train.start_queue_runners(sess=sess)
         steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
         training_iter = int(total_epochs * steps_per_epoch)

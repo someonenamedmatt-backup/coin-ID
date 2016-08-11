@@ -35,10 +35,8 @@ class CoinLabel:
         self.label_dct = df['label'].to_dict()
         self.n_labels = len(self.train_df.unique())
 
-
     def get_class_weights(self):
-        return [len(self.train_df[self.train_df == value]) for value in self.train_df.unique()
-                                                                        /len(self.train_df)]
+        return [len(self.train_df[self.train_df == value])/len(self.train_df) for value in self.train_df.unique()]
 
     def read(self, file):
         #needs to be absolute file path
