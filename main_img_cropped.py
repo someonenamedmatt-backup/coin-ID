@@ -5,7 +5,7 @@ from model import model3c2d
 
 def main():
         tfm = TFModel(model3c2d.encode_img, 'data/img_cropped_3c2d')
-        coinlabel = CoinLabel('/data2/processed/cropped/', '/home/ubuntu/coin/data/IDamegrade.csv',
+        coinlabel = CoinLabel('/data2/processed/cropped/', '/home/ubuntu/coin-ID/data/IDamegrade.csv',
                                 'img', 'grade_lbl', random_state = model3c2d.SEED)
         test = tfm.fit(coinlabel, 100)
         # tfm.evaluate(coinlabel)
