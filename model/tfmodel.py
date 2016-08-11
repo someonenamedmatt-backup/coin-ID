@@ -174,9 +174,9 @@ class TFModel(object):
         one_hot_names = tf.one_hot(name_batch, num_names,dtype = tf.float32,  axis = 1)
         W = tf.Variable(tf.zeros([num_names, num_grades]))
         b = tf.Variable(tf.zeros([num_grades]))
-        pred = tf.nn.softmax(tf.matmul(one_hot_names, W) + b) # Softmax
-        cost = tf.reduce_mean(-tf.reduce_sum(one_hot_grades*tf.log(pred), reduction_indices=1))
-        tf.add_to_colection('losses', name = 'logit_loss')
+        pred = tf.nn.softmax(tf.matmul(one_hot_names, W) + b, name = "wide_prediction") # Softmax
+        cost = tf.reduce_mean(-tf.reduce_sum(one_hot_grades*tf.log(pred), reduction_indices=1), name = "wide_cross_entropy")
+        tf.add_to_colection('losses',cost)
         return pred, cost
 
 
