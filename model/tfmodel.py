@@ -141,7 +141,7 @@ class TFModel(object):
                 checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_path, global_step=step)
 
-    def _train(self, total_loss, global_step, learning_rate = .0001):
+    def _train(self, total_loss, global_step, learning_rate = .001):
         # Generate moving averages of all losses and associated summaries.
 
         loss_averages_op = tf_helpers.add_loss_summaries(total_loss)
