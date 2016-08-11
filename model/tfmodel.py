@@ -3,10 +3,10 @@ import tensorflow as tf
 import numpy as np
 import os
 import tf_helpers
-from model5c3d import encode
 import tfinput
 import threading
 import time
+from datetime import datetime
 
 class TFModel(object):
     def __init__(self, encoding, save_dir, batch_size = 30, num_epochs_per_decay = 25, moving_average_decay = .9999):
@@ -21,45 +21,53 @@ class TFModel(object):
     def fit_test_0(self, coinlabel):
         #designed to test out the data pipeline
       with tf.Graph().as_default():
-        feature_batch, label_batch = tfinput.input(coinlabel.get_file_list(test = False))
-        train_op = tf.argmax(label_batch, dimension = 1)
+        feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False)[:100], self.batch_size)
+        train_op = tf.argmax(label_batch, dimension = 0)
         test = []
-        tf.train.start_queue_runners(sess=sess)
         init = tf.initialize_all_variables()
         sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
         sess.run(init)
-        for step in xrange(len(coinlabel.get_file_list)*2):
+        print 2
+        tf.train.start_queue_runners(sess=sess)
+        for step in xrange(250):
+            print step
             test.append(sess.run(train_op))
         return test
 
     def fit_test_1(self, coinlabel):
         #designed to test out the data pipeline
       with tf.Graph().as_default():
-        feature_batch, label_batch = tfinput.input(coinlabel.get_file_list(test = False))
-        train_op = tf.argmax(label_batch, dimension = 1)
+        class_weights = tf.constant(coinlabel.get_class_weights())
+        print 1
+        global_step = tf.Variable(0, trainable=False)
+        feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False)[:100], self.batch_size)
+        train_op = tf.argmax(label_batch, dimension = 0)
         saver = tf.train.Saver(tf.all_variables())
         # Build the summary operation based on the TF collection of Summaries.
         summary_op = tf.merge_all_summaries()
+        print 2
         # Build an initialization operation to run below.
         init = tf.initialize_all_variables()
         # Start running operations on the Graph.
         sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
         sess.run(init)
         summary_writer = tf.train.SummaryWriter(self.save_dir, sess.graph)
+        print 3
         test = []
-        training_iter = len(coinlabel.get_file_list)*2
-        for step in xrange(training_iter):
+        tf.train.start_queue_runners(sess=sess)
+        for step in xrange(10):
+            print step
             start_time = time.time()
             test.append(sess.run(train_op))
             duration = time.time() - start_time
-
+            print 4
             if step % 10 == 0:
                 examples_per_sec = self.batch_size / duration
                 sec_per_batch = float(duration)
 
-                format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
+                format_str = ('%s: step %d (%.1f examples/sec; %.3f '
                 'sec/batch)')
-                print(format_str % (datetime.now(), step, loss_value,
+                print(format_str % (datetime.now(), step,
                 examples_per_sec, sec_per_batch))
 
             if step % 100 == 0:
@@ -67,27 +75,36 @@ class TFModel(object):
                 summary_writer.add_summary(summary_str, step)
 
             # Save the model checkpoint periodically.
-            if step % 1000 == 0 or (step + 1) == training_iter:
+            if step % 1000 == 0:
                 checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_path, global_step=step)
         return test
 
-    def fit(self, coinlabel, training_iter = 10000):
+    def fit(self, coinlabel, epoch = 100, grade = True, use_logit = False):
+    #name labels say Grade = False
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
-        class_weights = tf.constant(coinlabel.get_class_weights())
+        class_weights = tf.constant(coinlabel.get_class_weights(), tf.float32)
         global_step = tf.Variable(0, trainable=False)
         # Build a Graph that computes the logits predictions from the
         # inference model.
-        feature_batch, label_batch = tfinput.input(coinlabel.get_file_list(test = False))
+        feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False), self.batch_size)
         logits = self.encoding(feature_batch, coinlabel.n_labels)
         weighted_logits = tf.mul(logits, class_weights)
+        if use_logit:
+            logit_pred, logit_cost = self._add_logit(grade_batch,name_batch, coinlabel.n_names, coinlabel.n_grades)
+            weighted_logits =   tf.mul(weighted_logits, logit_pred)
         # Calculate loss.
-        # loss = tf_helpers.loss(weighted_logits, label_batch)
+        if grade:
+            loss = tf_helpers.loss(weighted_logits, grade_batch)
+        else:
+            loss = tf_helpers.loss(weighted_logits, name_batch)
+        if use_logit:
+            loss = loss + logit_cost
+    
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
         train_op = self._train(loss, global_step)
-
         # Create a saver.
         saver = tf.train.Saver(tf.all_variables())
         # Build the summary operation based on the TF collection of Summaries.
@@ -99,9 +116,9 @@ class TFModel(object):
         sess.run(init)
         summary_writer = tf.train.SummaryWriter(self.save_dir, sess.graph)
         ### pool the queueing processed
-        tf.train.start_queue_runners(sess=sess)
         sess.run(init)
-        test = []
+        tf.train.start_queue_runners(sess=sess)
+        training_iter = int(epoch *len(coinlabel.get_file_list(False))/self.batch_size)
         for step in xrange(training_iter):
             start_time = time.time()
             sess.run(train_op)
@@ -152,55 +169,66 @@ class TFModel(object):
             train_op = tf.no_op(name='train')
         return train_op
 
-    def evaluate(coinlabel):
-      with tf.Graph().as_default() as g:
-        feature_batch, label_batch = tfinput.input(coinlabel.get_file_list(test = True))
-        logits = self.encoding(feature_batch, coinlabel.n_labels)
-        #find top k predictions
-        top_k_op = tf.nn.in_top_k(logits, labels, 1)
-        variable_averages = tf.train.ExponentialMovingAverage(
-                                    self.moving_average_decay)
-        variables_to_restore = variable_averages.variables_to_restore()
-        saver = tf.train.Saver(variables_to_restore)
-        summary_op = tf.merge_all_summaries()
-        summary_writer = tf.train.SummaryWriter(self.save_dir, g)
+    def _add_logit(grade_batch,name_batch, num_names, num_grades):
+        one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
+        one_hot_names = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
+        W = tf.Variable(tf.zeros([num_names, num_grades]))
+        b = tf.Variable(tf.zeros([num_grades]))
+        pred = tf.nn.softmax(tf.matmul(x, W) + b) # Softmax
+        cost = tf.reduce_mean(-tf.reduce_sum(y*tf.log(pred), reduction_indices=1))
+        tf.add_to_colection('losses', name = 'logit_loss')
+        return pred, cost
 
-        with tf.Session() as sess:
-            ckpt = tf.train.get_checkpoint_state(self.save_dir)
-            if ckpt and ckpt.model_checkpoint_path:
-                # Restores from checkpoint
-                saver.restore(sess, ckpt.model_checkpoint_path)
-                # Assuming model_checkpoint_path looks something like:
-                #   /my-favorite-path/cifar10_train/model.ckpt-0,
-                # extract global_step from it.
-                global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-            else:
-                print('No checkpoint file found')
-                return
 
-            coord = tf.train.Coordinator()
-                # Restore the moving average version of the learned variables for eval.
-                try:
-                    threads = []
-                    for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
-                        threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
-                                         start=True))
-                     num_iter = int(math.ceil(len(coinlabel.test_df) / self.batch_size))
-                     true_count = 0  # Counts the number of correct predictions.
-                     total_sample_count = num_iter * self.batch_size
-                     step = 0
-                     while step < num_iter and not coord.should_stop():
-                         predictions = sess.run([top_k_op])
-                         true_count += np.sum(predictions)
-                         step += 1
-                    # Compute precision @ 1.
-                    precision = true_count / total_sample_count
-                    print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
-                    summary = tf.Summary()
-                    summary.ParseFromString(sess.run(summary_op))
-                    summary.value.add(tag='Precision @ 1', simple_value=precision)
-                    summary_writer.add_summary(summary, global_step)
-                except Exception as e:  # pylint: disable=broad-except
-                    coord.request_stop(e)
-                coord.request_stop()
-                coord.join(threads, stop_grace_period_secs=10)
+    # def evaluate(coinlabel):
+    #   with tf.Graph().as_default() as g:
+    #     feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True))
+    #     logits = self.encoding(feature_batch, coinlabel.n_labels)
+    #     #find top k predictions
+    #     top_k_op = tf.nn.in_top_k(logits, labels, 1)
+    #     variable_averages = tf.train.ExponentialMovingAverage(
+    #                                 self.moving_average_decay)
+    #     variables_to_restore = variable_averages.variables_to_restore()
+    #     saver = tf.train.Saver(variables_to_restore)
+    #     summary_op = tf.merge_all_summaries()
+    #     summary_writer = tf.train.SummaryWriter(self.save_dir, g)
+    #
+    #     with tf.Session() as sess:
+    #         ckpt = tf.train.get_checkpoint_state(self.save_dir)
+    #         if ckpt and ckpt.model_checkpoint_path:
+    #             # Restores from checkpoint
+    #             saver.restore(sess, ckpt.model_checkpoint_path)
+    #             # Assuming model_checkpoint_path looks something like:
+    #             #   /my-favorite-path/cifar10_train/model.ckpt-0,
+    #             # extract global_step from it.
+    #             global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+    #         else:
+    #             print('No checkpoint file found')
+    #             return
+    #
+    #         coord = tf.train.Coordinator()
+    #             # Restore the moving average version of the learned variables for eval.
+    #             try:
+    #                 threads = []
+    #                 for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
+    #                     threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
+    #                                      start=True))
+    #                  num_iter = int(math.ceil(len(coinlabel.test_df) / self.batch_size))
+    #                  true_count = 0  # Counts the number of correct predictions.
+    #                  total_sample_count = num_iter * self.batch_size
+    #                  step = 0
+    #                  while step < num_iter and not coord.should_stop():
+    #                      predictions = sess.run([top_k_op])
+    #                      true_count += np.sum(predictions)
+    #                      step += 1
+    #                 # Compute precision @ 1.
+    #                 precision = true_count / total_sample_count
+    #                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+    #                 summary = tf.Summary()
+    #                 summary.ParseFromString(sess.run(summary_op))
+    #                 summary.value.add(tag='Precision @ 1', simple_value=precision)
+    #                 summary_writer.add_summary(summary, global_step)
+    #             except Exception as e:  # pylint: disable=broad-except
+    #                 coord.request_stop(e)
+    #             coord.request_stop()
+    #             coord.join(threads, stop_grace_period_secs=10)

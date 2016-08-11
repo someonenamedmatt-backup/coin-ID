@@ -21,7 +21,7 @@ def encode_rad(input, n_labels, do=True):
     l = tf_helpers.get_dense_layer_relu("dense2",l,128)
     if do:
        l = tf.nn.dropout(l,.5)
-    l = tf_helpers.get_dense_layer("softmax",l,n_labels)
+    l = tf_helpers.get_softmax_linear_layer("softmax_linear",l,n_labels)
     return l
 
 def encoding_img(input, n_labels, do=True):
@@ -41,5 +41,5 @@ def encoding_img(input, n_labels, do=True):
     l = tf_helpers.get_dense_layer_relu("dense2",l,128)
     if do:
        l = tf.nn.dropout(l,.5)
-    l = tf_helpers.get_dense_layer("softmax",l,n_labels)
+    l = tf_helpers.get_softmax_linear_layer("softmax_linear",l,n_labels)
     return l

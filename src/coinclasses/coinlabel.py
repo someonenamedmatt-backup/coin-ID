@@ -22,7 +22,7 @@ class CoinLabel:
         df = pd.read_csv(csv_file)[['ID',label_col]]
         df['file_names'] = map((lambda x:  str(x)),df['ID'])
         df = df[df['file_names'].isin(set(df['file_names']).intersection(set(os.listdir(img_folder))))]
-        df['file_names'] = map(lambda x: img_folder + str(int(x)) + '/' + coin_prop +'.npy',df['file_names'])
+        df['file_names'] = map(lambda x: img_folder + str(int(x)) + '/' + coin_prop ,df['file_names'])
         df.rename(columns={label_col: 'label'}, inplace=True)
         df.set_index('file_names', inplace = True)
         self.train_df, self.test_df = train_test_split(df['label'],
@@ -33,8 +33,8 @@ class CoinLabel:
         self.n_labels = len(self.train_df.unique())
 
     def get_class_weights(self):
-        return [len(self.train_df)/len(self.train_df[self.train_df == value])
-                                        for value in self.train_df.unique()]
+        return [len(self.train_df[self.train_df == value]) for value in self.train_df.unique()
+                                                                        /len(self.train_df)]
 
     def read(self, file):
         #needs to be absolute file path

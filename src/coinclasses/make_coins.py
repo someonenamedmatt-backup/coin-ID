@@ -147,41 +147,82 @@ def convert_coin_bin(f):
         pass
 
 def add_labels():
-    df = pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv').set_index('ID')
-    global grade_dct, name_dct
-    grade_dct = df['grade_lbl'].to_dict()
-    name_dct = df['name_lbl'].to_dict()
-    bad_list = []
-    file_list = [os.path.join(subdir,name) for name in files for subdir, dirs, files in os.walk('/data2/processed')]
+    df = pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv')
+    df['cropped_folders'] = df.ID.map(lambda ID: '/data2/processed/cropped/' + str(ID))
+    df['whole_folders'] = df.ID.map(lambda ID: '/data2/processed/whole/' + str(ID))
     pool = mp.Pool(mp.cpu_count())
-    pool.map(add_label,file_list)
+    pool.map(add_label,list(df[['ID','cropped_folders','grade_lbl','name_lbl']].values))
+    pool.map(add_label,list(df[['ID','whole_folders','grade_lbl','name_lbl']].values))
     pool.close()
     pool.join()
 
 bad_value = Manager().list()
 not_in_dict = Manager().list()
 
-def add_label(f):
+def add_label((ID, folder, grade_lbl, name_lbl)):
+    df = pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv').set_index('ID')
     try:
-        ID, typ = f.split('/')[-2:]
-        if typ in ['img', 'rad']:
-            try:
-                value = np.fromfile(f)
-            except:
-                bad_value.append(ID)
-            try:
-                if len(value) == 128*128*3:
-                    np.append(value,grade_dct[ID],name_dct[ID]).tofile(f)
-                elif len(value) == 128*128*3 +1:
-                    np.append(value,[grade_dct[ID],name_dct[ID]]).tofile(f)
-            except:
-                not_in_dict.append(ID)
-        elif name in ['img.npy', 'rad.npy']:
+        for typ in os.listdir(folder):
+            f = folder + '/' + typ
+            if typ in ['img', 'rad']:
+                try:
+                    value = np.fromfile(f)
+                except:
+                    bad_value.append(ID)
+                np.append(value[:128*128*3],[grade_lbl,name_lbl]).tofile(f)
+            elif typ in ['img.npy', 'rad.npy']:
                 value = np.load(f).flatten()
                 np.append(value,[grade_dct[ID],name_dct[ID]]).tofile(f[:-4])
     except:
-        bad_coins.append(f)
+        print folder
+        bad_coins.append(folder)
 
+def filter_coins():
+#goes through and deletes any coins without an entry in IDnamegrade
+    del_convert = set(bad_value).union(set(bad_coins))
+    whole_coins = set(map(lambda word:int(word), set(os.listdir('/data2/processed/whole'))))
+    cropped_coins = set(map(lambda word:int(word),set(os.listdir('/data2/processed/cropped'))))
+    coins_to_keep = whole_coins.intersection(cropped_coins)
+    IDnamegrade = pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv')
+    IDname = pd.read_csv('/home/ubuntu/coin/data/IDname.csv')
+    IDgrade = pd.read_csv('/home/ubuntu/coin/data/IDgrade.csv')
+    csv_coins = set(pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv')['ID'])
+    coins_to_keep = coins_to_keep.intersection(csv_coins)
+    whole_del = (whole_coins - coins_to_keep).union(del_convert)
+    cropped_del = (cropped_coins - coins_to_keep).union(del_convert)
+    IDnamegrade = IDnamegrade[IDnamegrade.ID.isin(coins_to_keep)]
+    IDnamegrade[['ID','name_lbl','grade_lbl']].to_csv('/home/ubuntu/coin/data/IDnamegrade.csv')
+    IDname = IDname[IDname.ID.isin(coins_to_keep)]
+    IDname[['ID','name_lbl']].to_csv('/home/ubuntu/coin/data/IDname.csv')
+    IDgrade = IDgrade[IDgrade.ID.isin(coins_to_keep)]
+    IDgrade[['ID','grade_lbl']].to_csv('/home/ubuntu/coin/data/IDgrade.csv')
+    for ID in whole_del:
+        os.system('rm -r /data2/processed/whole/'+ str(ID))
+    for i, ID in enumerate(cropped_del):
+        if i%10000 == 0:
+            print i
+        os.system('rm -r /data2/processed/cropped/'+ str(ID))
+def clean_coins():
+    whole_coins = set(map(lambda word:int(word), set(os.listdir('/data2/processed/whole'))))
+    cropped_coins = set(map(lambda word:int(word),set(os.listdir('/data2/processed/cropped'))))
+    coins_to_keep = whole_coins.intersection(cropped_coins)
+    IDnamegrade = pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv')
+    IDname = pd.read_csv('/home/ubuntu/coin/data/IDname.csv')
+    IDgrade = pd.read_csv('/home/ubuntu/coin/data/IDgrade.csv')
+    csv_coins = set(pd.read_csv('/home/ubuntu/coin/data/IDnamegrade.csv')['ID'])
+    coins_to_keep = coins_to_keep.intersection(csv_coins)
+
+    for i,f in enumerate(coins_to_keep):
+        if i % 10000 == 0:
+            print i
+        x, y = '/data2/processed/whole/' + str(f)+'/img', '/data2/processed/whole/' + str(f) + '/rad'
+        if len(np.fromfile(x))!= 128*128*3+2 or len(np.fromfile(y))!= 128*128*3+2:
+            print f
+            os.system('rm -r /data2/processed/whole/' + str(f))
+        x, y = '/data2/processed/cropped/' + str(f)+'/img', '/data2/processed/cropped/' + str(f) + '/rad'
+        if len(np.fromfile(x))!= 128*128*3+2 or len(np.fromfile(y))!= 128*128*3+2:
+            print f
+            os.system('rm -r /data2/processed/cropped/' + str(f))
 
 
 if __name__ == '__main__':

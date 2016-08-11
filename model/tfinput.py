@@ -1,4 +1,6 @@
 from __future__ import division
+import tensorflow as tf
+
 def read_coin(filename_queue):
     """Reads and parses coin data
       Args:
@@ -8,7 +10,8 @@ def read_coin(filename_queue):
         height: number of rows in the result (128)
         width: number of columns in the result (128)
         depth: number of color channels in the result (3)
-        label: an int32 Tensor with the label
+        grade: an int32 Tensor with the condition of the coin label
+        name: an int32 Tensor with the name of the coin label
         uint8image: a [height, width, depth] float64 Tensor with the image data
      """
     class ImageRecord(object):
@@ -24,15 +27,15 @@ def read_coin(filename_queue):
     image_bytes = result.height * result.width * result.depth
     reader = tf.WholeFileReader()
     result.key, value = reader.read(filename_queue)
-    decoded = tf.decode_raw(value, tf.float64)
-    print decoded.get_shape()
-    result.label = tf.cast(tf.slice(decoded, [image_bytes],[label_bytes]), tf.int32)
+    decoded = tf.cast(tf.decode_raw(value, tf.float64),tf.float32)
+
+    result.grade = tf.cast(tf.slice(decoded, [image_bytes],[label_bytes]), tf.int32)
+    result.name = tf.cast(tf.slice(decoded, [image_bytes+1],[label_bytes]), tf.int32)
     result.image = tf.reshape(tf.slice(decoded, [0], [image_bytes]),[result.height,result.width,result.depth])
     #not sure which is heigh vs width but its consistent
     return result
 
-def _generate_image_and_label_batch(image, label, min_queue_examples,
-                                    batch_size, shuffle):
+def input(file_list, batch_size):
     """Construct a queued batch of images and labels.
     Args:
     image: 3-D Tensor of [height, width, 3] of type.float64.
@@ -42,47 +45,22 @@ def _generate_image_and_label_batch(image, label, min_queue_examples,
     batch_size: Number of images per batch.
     shuffle: boolean indicating whether to use a shuffling queue.
     Returns:
-    images: Images. 4D tensor of [batch_size, height, width, 3] size.
-    labels: Labels. 1D tensor of [batch_size] size.
-    """
-    num_preprocess_threads = 16
-    if shuffle:
-        images, label_batch = tf.train.shuffle_batch(
-                                        [image, label],
-                                        batch_size=batch_size,
-                                        num_threads=num_preprocess_threads,
-                                        capacity=min_queue_examples + 3 * batch_size,
-                                        min_after_dequeue=min_queue_examples)
-    else:
-        images, label_batch = tf.train.batch(
-                                    [image, label],
-                                    batch_size=batch_size,
-                                    num_threads=num_preprocess_threads,
-                                    capacity=min_queue_examples + 3 * batch_size)
-
-    # Display the training images in the visualizer.
-#     tf.image_summary('images', images)
-
-    return images, tf.reshape(label_batch, [batch_size])
-
-def inputs(eval_data, file_list, batch_size):
-    """Construct input for CIFAR evaluation using the Reader ops.
-    Args:
-    eval_data: bool, indicating if one should use the train or eval data set.
-    data_dir: Path to the CIFAR-10 data directory.
-    batch_size: Number of images per batch.
-    Returns:
     images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
     labels: Labels. 1D tensor of [batch_size] size.
     """
-
-    for f in file_list:
-        if not tf.gfile.Exists(f):
-            raise ValueError('Failed to find file: ' + f)
+    # for f in file_list:
+    #     if not tf.gfile.Exists(f):
+    #         raise ValueError('Failed to find file: ' + f)
 
     filename_queue = tf.train.string_input_producer(file_list)
     read_input = read_coin(filename_queue)
-    # Generate a batch of images and labels by building up a queue of examples.
-    return _generate_image_and_label_batch(read_input.image, read_input.label,
-                                        batch_size * 3, batch_size, shuffle = False)
-                
+    num_preprocess_threads = 16
+    image_batch, grade_batch, name_batch = tf.train.batch(
+                                [read_input.image,read_input.grade,read_input.name],
+                                batch_size=batch_size,
+                                num_threads=num_preprocess_threads,
+                                capacity=batch_size * 6)
+
+    # Display the training images in the visualizer.
+    # tf.image_summary('images', image_batch)
+    return image_batch, tf.reshape(grade_batch, [batch_size]), tf.reshape(name_batch, [batch_size])

@@ -51,7 +51,7 @@ def get_dense_layer_relu(name, input, dim, reuse=False):
     with tf.variable_scope(name, reuse=reuse):
         input_ = tf.reshape(input, [input.get_shape()[0].value,-1])
         w = tf.get_variable("w", shape=[input_.get_shape()[1].value,dim], initializer=tf.contrib.layers.xavier_initializer() )
-        weight_decay = tf.mul(tf.nn.l2_loss(w), wd, name='weight_loss')
+        weight_decay = tf.mul(tf.nn.l2_loss(w), .04, name='weight_loss')
         tf.add_to_collection('losses', weight_decay)
         b = tf.get_variable("b", shape=[dim])
         output = tf.nn.relu(tf.matmul(input_,w) + b)
@@ -59,12 +59,12 @@ def get_dense_layer_relu(name, input, dim, reuse=False):
     return output
 
 
-def get_dense_layer(name, input, dim, reuse=False):
+def get_softmax_linear_layer(name, input, dim, reuse=False):
     with tf.variable_scope(name, reuse=reuse):
         input_ = tf.reshape(input, [input.get_shape()[0].value,-1])
         w = tf.get_variable("w", shape=[input_.get_shape()[1].value,dim], initializer=tf.contrib.layers.xavier_initializer() )
         b = tf.get_variable("b", shape=[dim])
-        output = tf.nn.softmax(tf.matmul(input_,w) + b)
+        output = tf.add(tf.matmul(input_,w), b)
         _activation_summary(output)
     return output
 

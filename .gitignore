@@ -1,6 +1,7 @@
 *.pyc
 data/*
 !.gitignore
+!IDnamegrade.csv
 model/saves/*
 !.gitignore
 *.ckpt
