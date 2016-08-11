@@ -2,7 +2,6 @@ from __future__ import division
 import os
 import tensorflow as tf
 import pandas as pd
-from coin import Coin
 from sklearn.cross_validation import train_test_split
 import numpy as np
 
@@ -31,6 +30,10 @@ class CoinLabel:
                                          random_state = random_state)
         self.label_dct = df['label'].to_dict()
         self.n_labels = len(self.train_df.unique())
+        if "name_lbl" in df.columns:
+            self.n_names = len(df['name_lbl'].unique())
+        if "grade_lbl" in df.columns:
+            self.n_grades = len(df['grade_lbl'].unique())
 
     def get_class_weights(self):
         return [len(self.train_df[self.train_df == value]) for value in self.train_df.unique()
