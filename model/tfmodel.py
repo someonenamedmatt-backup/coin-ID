@@ -116,18 +116,17 @@ class TFModel(object):
         summary_writer = tf.train.SummaryWriter(self.save_dir, sess.graph)
         ### pool the queueing processed
         sess.run(init)
-        with sess:
-            try:
-                ckpt = tf.train.get_checkpoint_state(self.save_dir)
-                if ckpt and ckpt.model_checkpoint_path:
-                    # Restores from checkpoint
-                    saver.restore(sess, ckpt.model_checkpoint_path)
-                    # Assuming model_checkpoint_path looks something like:
-                    #   /my-favorite-path/cifar10_train/model.ckpt-0,
-                    # extract global_step from it.
-                    global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-            except:
-                pass
+        try:
+            ckpt = tf.train.get_checkpoint_state(self.save_dir)
+            if ckpt and ckpt.model_checkpoint_path:
+                # Restores from checkpoint
+                saver.restore(sess, ckpt.model_checkpoint_path)
+                # Assuming model_checkpoint_path looks something like:
+                #   /my-favorite-path/cifar10_train/model.ckpt-0,
+                # extract global_step from it.
+                global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+        except:
+            pass
         tf.train.start_queue_runners(sess=sess)
         steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
         training_iter = int(total_epochs * steps_per_epoch)
