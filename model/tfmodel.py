@@ -79,7 +79,7 @@ class TFModel(object):
                 saver.save(sess, checkpoint_path, global_step=step)
         return test
 
-    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False):
+    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False):
     #name labels say Grade = False
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
@@ -116,7 +116,7 @@ class TFModel(object):
         summary_writer = tf.train.SummaryWriter(self.save_dir, sess.graph)
         ### pool the queueing processed
         sess.run(init)
-        try:
+        if load_save:
             ckpt = tf.train.get_checkpoint_state(self.save_dir)
             if ckpt and ckpt.model_checkpoint_path:
                 # Restores from checkpoint
@@ -126,8 +126,8 @@ class TFModel(object):
                 # extract global_step from it.
                 global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
                 start = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-        except:
-            pass
+            else:
+                start = 0
         tf.train.start_queue_runners(sess=sess)
         steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
         training_iter = int(total_epochs * steps_per_epoch)
