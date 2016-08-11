@@ -131,7 +131,7 @@ class TFModel(object):
         tf.train.start_queue_runners(sess=sess)
         steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
         training_iter = int(total_epochs * steps_per_epoch)
-        for step in xrange(start , training_iter):
+        for step in xrange(int(start), training_iter):
             start_time = time.time()
             sess.run(train_op)
             _, loss_value = sess.run([train_op, loss])
