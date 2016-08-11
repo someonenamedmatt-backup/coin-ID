@@ -174,8 +174,8 @@ class TFModel(object):
         one_hot_names = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
         W = tf.Variable(tf.zeros([num_names, num_grades]))
         b = tf.Variable(tf.zeros([num_grades]))
-        pred = tf.nn.softmax(tf.matmul(x, W) + b) # Softmax
-        cost = tf.reduce_mean(-tf.reduce_sum(y*tf.log(pred), reduction_indices=1))
+        pred = tf.nn.softmax(tf.matmul(one_hot_names, W) + b) # Softmax
+        cost = tf.reduce_mean(-tf.reduce_sum(one_hot_names*tf.log(pred), reduction_indices=1))
         tf.add_to_colection('losses', name = 'logit_loss')
         return pred, cost
 
