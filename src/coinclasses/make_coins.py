@@ -196,8 +196,10 @@ def filter_coins():
     IDname[['ID','name_lbl']].to_csv('/home/ubuntu/coin/data/IDname.csv')
     IDgrade = IDgrade[IDgrade.ID.isin(coins_to_keep)]
     IDgrade[['ID','grade_lbl']].to_csv('/home/ubuntu/coin/data/IDgrade.csv')
-    for ID in whole_del:
-        os.system('rm -r /data2/processed/whole/'+ str(ID))
+for i, ID in enumerate(whole_del):
+    if i%10000 == 0:
+        print i
+    os.system('rm -r /data2/processed/whole/'+ str(ID))
     for i, ID in enumerate(cropped_del):
         if i%10000 == 0:
             print i
