@@ -171,11 +171,12 @@ class TFModel(object):
 
     def _add_logit(self, grade_batch,name_batch, num_names, num_grades):
         one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
-        one_hot_names = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
+        one_hot_names = tf.one_hot(grade_batch, num_names,dtype = tf.float32,  axis = 1)
         print grade_batch.get_shape()
         print one_hot_grades.get_shape()
         print name_batch.get_shape()
         print one_hot_names.get_shape()
+        import pdb; pdb.set_trace()
         W = tf.Variable(tf.zeros([num_names, num_grades]))
         b = tf.Variable(tf.zeros([num_grades]))
         pred = tf.nn.softmax(tf.matmul(one_hot_names, W) + b) # Softmax
