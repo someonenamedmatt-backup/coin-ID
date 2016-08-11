@@ -7,7 +7,7 @@ import tfinput
 import threading
 import time
 from datetime import datetime
-import math
+import matdh
 
 class TFModel(object):
     def __init__(self, encoding, save_dir, batch_size = 30, num_epochs_per_decay = 25, moving_average_decay = .9999):
@@ -223,6 +223,7 @@ class TFModel(object):
                     predictions = sess.run([top_k_op])
                     true_count += np.sum(predictions)
                     step += 1
+                print step
                 # Compute precision @ 1.
                 precision = true_count / total_sample_count
                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
