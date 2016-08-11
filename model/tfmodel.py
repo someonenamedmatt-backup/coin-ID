@@ -125,12 +125,14 @@ class TFModel(object):
                 #   /my-favorite-path/cifar10_train/model.ckpt-0,
                 # extract global_step from it.
                 global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+
         except:
             pass
+        start = int(sess.run(global_step))
         tf.train.start_queue_runners(sess=sess)
         steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
         training_iter = int(total_epochs * steps_per_epoch)
-        for step in xrange(sess.run(global_step), training_iter):
+        for step in xrange(start , training_iter):
             start_time = time.time()
             sess.run(train_op)
             _, loss_value = sess.run([train_op, loss])
