@@ -18,7 +18,11 @@ class CoinLabel:
             raise NameError
         if img_folder[-1] != '/':
             img_folder += '/'
-        df = pd.read_csv(csv_file)[['ID',label_col]]
+        df = pd.read_csv(csv_file)
+        if "name_lbl" in df.columns:
+            self.n_names = len(df['name_lbl'].unique())
+        if "grade_lbl" in df.columns:
+            self.n_grades = len(df['grade_lbl'].unique())
         df['file_names'] = map((lambda x:  str(x)),df['ID'])
         df = df[df['file_names'].isin(set(df['file_names']).intersection(set(os.listdir(img_folder))))]
         df['file_names'] = map(lambda x: img_folder + str(int(x)) + '/' + coin_prop ,df['file_names'])
@@ -30,10 +34,7 @@ class CoinLabel:
                                          random_state = random_state)
         self.label_dct = df['label'].to_dict()
         self.n_labels = len(self.train_df.unique())
-        if "name_lbl" in df.columns:
-            self.n_names = len(df['name_lbl'].unique())
-        if "grade_lbl" in df.columns:
-            self.n_grades = len(df['grade_lbl'].unique())
+
 
     def get_class_weights(self):
         return [len(self.train_df[self.train_df == value]) for value in self.train_df.unique()
