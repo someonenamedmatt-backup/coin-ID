@@ -19,7 +19,7 @@ def encode_rad(input, n_labels, do=True):
     l = tf_helpers.get_softmax_linear_layer("softmax_linear",l,n_labels)
     return l
 
-def encoding_img(input, n_labels, do=True):
+def encode_img(input, n_labels, do=True):
     l = tf_helpers.get_conv("conv1",input,3,3,32)
     l = tf_helpers.get_pool_and_lrn(l,1)
     l = tf_helpers.get_conv("conv2",input,3,3,64)
