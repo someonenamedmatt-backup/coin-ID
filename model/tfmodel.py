@@ -179,7 +179,7 @@ class TFModel(object):
         return pred, cost
 
 
-    def evaluate(coinlabel):
+    def evaluate(self, coinlabel):
       with tf.Graph().as_default() as g:
         feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True))
 
