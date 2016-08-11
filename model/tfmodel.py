@@ -169,7 +169,7 @@ class TFModel(object):
             train_op = tf.no_op(name='train')
         return train_op
 
-    def _add_logit(grade_batch,name_batch, num_names, num_grades):
+    def _add_logit(self, grade_batch,name_batch, num_names, num_grades):
         one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
         one_hot_names = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
         W = tf.Variable(tf.zeros([num_names, num_grades]))
