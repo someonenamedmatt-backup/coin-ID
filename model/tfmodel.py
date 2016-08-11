@@ -179,13 +179,15 @@ class TFModel(object):
         return pred, cost
 
 
-    def evaluate(self, coinlabel):
+    def evaluate(self, coinlabel, grade = True):
       with tf.Graph().as_default() as g:
-        feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True), self.batch_size)
-
+        feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True), self.batch_size)
         logits = self.encoding(feature_batch, coinlabel.n_labels)
         #find top k predictions
-        top_k_op = tf.nn.in_top_k(logits, labels, 1)
+        if grade:
+            top_k_op = tf.nn.in_top_k(logits, grade_batch, 1)
+        else:
+            top_k_op = tf.nn.in_top_k(logits, name_batch, 1)
         variable_averages = tf.train.ExponentialMovingAverage(
                                     self.moving_average_decay)
         variables_to_restore = variable_averages.variables_to_restore()
