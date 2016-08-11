@@ -4,7 +4,7 @@ from model import model5c3d
 
 def main():
         tfm = TFModel(model5c3d.encode_rad, 'data/rad_cropped_5c3d')
-        coinlabel = CoinLabel('/data/cropped/', '/home/ubuntu/coin-ID/data/IDnamegrade.csv',
+        coinlabel = CoinLabel('/data/images/', '/home/ubuntu/coin-ID/data/IDnamegrade.csv',
                                 'rad', 'grade_lbl', random_state = model5c3d.SEED)
         test = tfm.fit(coinlabel, 100)
 
