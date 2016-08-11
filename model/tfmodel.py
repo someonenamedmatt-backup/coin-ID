@@ -64,7 +64,6 @@ class TFModel(object):
             if step % 10 == 0:
                 examples_per_sec = self.batch_size / duration
                 sec_per_batch = float(duration)
-
                 format_str = ('%s: step %d (%.1f examples/sec; %.3f '
                 'sec/batch)')
                 print(format_str % (datetime.now(), step,
@@ -80,7 +79,7 @@ class TFModel(object):
                 saver.save(sess, checkpoint_path, global_step=step)
         return test
 
-    def fit(self, coinlabel, epoch = 100, grade = True, use_logit = False):
+    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False):
     #name labels say Grade = False
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
@@ -101,7 +100,6 @@ class TFModel(object):
             loss = tf_helpers.loss(weighted_logits, name_batch)
         if use_logit:
             loss = loss + logit_cost
-    
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
         train_op = self._train(loss, global_step)
@@ -118,7 +116,8 @@ class TFModel(object):
         ### pool the queueing processed
         sess.run(init)
         tf.train.start_queue_runners(sess=sess)
-        training_iter = int(epoch *len(coinlabel.get_file_list(False))/self.batch_size)
+        steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
+        training_iter = int(total_epochs * steps_per_epoch)
         for step in xrange(training_iter):
             start_time = time.time()
             sess.run(train_op)
@@ -129,11 +128,11 @@ class TFModel(object):
             if step % 10 == 0:
                 examples_per_sec = self.batch_size / duration
                 sec_per_batch = float(duration)
-
-                format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
-                'sec/batch)')
-                print(format_str % (datetime.now(), step, loss_value,
-                examples_per_sec, sec_per_batch))
+                current_epoch = int( step / steps_per_epoch)
+                estimated_time_left = duration * (training_iter - step)/3600
+                format_str = ('step %d. Epoch %d out of %d. loss = %.2f (%.1f examples/sec; %.3f '
+                'sec/batch). Estimated time left: %.4f hours')
+                print(format_str % (step,current_epoch,total_epochs, loss_value, examples_per_sec, sec_per_batch, estimated_time_left))
             if step % 100 == 0:
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, step)
@@ -144,6 +143,7 @@ class TFModel(object):
 
     def _train(self, total_loss, global_step, learning_rate = .0001):
         # Generate moving averages of all losses and associated summaries.
+
         loss_averages_op = tf_helpers.add_loss_summaries(total_loss)
         # Compute gradients.
         with tf.control_dependencies([loss_averages_op]):
@@ -180,55 +180,54 @@ class TFModel(object):
         return pred, cost
 
 
-    # def evaluate(coinlabel):
-    #   with tf.Graph().as_default() as g:
-    #     feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True))
-    #     logits = self.encoding(feature_batch, coinlabel.n_labels)
-    #     #find top k predictions
-    #     top_k_op = tf.nn.in_top_k(logits, labels, 1)
-    #     variable_averages = tf.train.ExponentialMovingAverage(
-    #                                 self.moving_average_decay)
-    #     variables_to_restore = variable_averages.variables_to_restore()
-    #     saver = tf.train.Saver(variables_to_restore)
-    #     summary_op = tf.merge_all_summaries()
-    #     summary_writer = tf.train.SummaryWriter(self.save_dir, g)
-    #
-    #     with tf.Session() as sess:
-    #         ckpt = tf.train.get_checkpoint_state(self.save_dir)
-    #         if ckpt and ckpt.model_checkpoint_path:
-    #             # Restores from checkpoint
-    #             saver.restore(sess, ckpt.model_checkpoint_path)
-    #             # Assuming model_checkpoint_path looks something like:
-    #             #   /my-favorite-path/cifar10_train/model.ckpt-0,
-    #             # extract global_step from it.
-    #             global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-    #         else:
-    #             print('No checkpoint file found')
-    #             return
-    #
-    #         coord = tf.train.Coordinator()
-    #             # Restore the moving average version of the learned variables for eval.
-    #             try:
-    #                 threads = []
-    #                 for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
-    #                     threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
-    #                                      start=True))
-    #                  num_iter = int(math.ceil(len(coinlabel.test_df) / self.batch_size))
-    #                  true_count = 0  # Counts the number of correct predictions.
-    #                  total_sample_count = num_iter * self.batch_size
-    #                  step = 0
-    #                  while step < num_iter and not coord.should_stop():
-    #                      predictions = sess.run([top_k_op])
-    #                      true_count += np.sum(predictions)
-    #                      step += 1
-    #                 # Compute precision @ 1.
-    #                 precision = true_count / total_sample_count
-    #                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
-    #                 summary = tf.Summary()
-    #                 summary.ParseFromString(sess.run(summary_op))
-    #                 summary.value.add(tag='Precision @ 1', simple_value=precision)
-    #                 summary_writer.add_summary(summary, global_step)
-    #             except Exception as e:  # pylint: disable=broad-except
-    #                 coord.request_stop(e)
-    #             coord.request_stop()
-    #             coord.join(threads, stop_grace_period_secs=10)
+    def evaluate(coinlabel):
+      with tf.Graph().as_default() as g:
+        feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True))
+        logits = self.encoding(feature_batch, coinlabel.n_labels)
+        #find top k predictions
+        top_k_op = tf.nn.in_top_k(logits, labels, 1)
+        variable_averages = tf.train.ExponentialMovingAverage(
+                                    self.moving_average_decay)
+        variables_to_restore = variable_averages.variables_to_restore()
+        saver = tf.train.Saver(variables_to_restore)
+        summary_op = tf.merge_all_summaries()
+        summary_writer = tf.train.SummaryWriter(self.save_dir, g)
+        with tf.Session() as sess:
+            ckpt = tf.train.get_checkpoint_state(self.save_dir)
+            if ckpt and ckpt.model_checkpoint_path:
+                # Restores from checkpoint
+                saver.restore(sess, ckpt.model_checkpoint_path)
+                # Assuming model_checkpoint_path looks something like:
+                #   /my-favorite-path/cifar10_train/model.ckpt-0,
+                # extract global_step from it.
+                global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+            else:
+                print('No checkpoint file found')
+                return
+
+            coord = tf.train.Coordinator()
+                # Restore the moving average version of the learned variables for eval.
+                try:
+                    threads = []
+                    for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
+                        threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
+                                         start=True))
+                     num_iter = int(math.ceil(len(coinlabel.test_df) / self.batch_size))
+                     true_count = 0  # Counts the number of correct predictions.
+                     total_sample_count = num_iter * self.batch_size
+                     step = 0
+                     while step < num_iter and not coord.should_stop():
+                         predictions = sess.run([top_k_op])
+                         true_count += np.sum(predictions)
+                         step += 1
+                    # Compute precision @ 1.
+                    precision = true_count / total_sample_count
+                    print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+                    summary = tf.Summary()
+                    summary.ParseFromString(sess.run(summary_op))
+                    summary.value.add(tag='Precision @ 1', simple_value=precision)
+                    summary_writer.add_summary(summary, global_step)
+                except Exception as e:  # pylint: disable=broad-except
+                    coord.request_stop(e)
+                coord.request_stop()
+                coord.join(threads, stop_grace_period_secs=10)
