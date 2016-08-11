@@ -73,7 +73,6 @@ class TFModel(object):
             if step % 100 == 0:
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, step)
-
             # Save the model checkpoint periodically.
             if step % 1000 == 0:
                 checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
@@ -85,7 +84,6 @@ class TFModel(object):
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
         class_weights = tf.constant(coinlabel.get_class_weights(), tf.float32)
-        global_step = tf.Variable(0, trainable=False)
         # Build a Graph that computes the logits predictions from the
         # inference model.
         feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False), self.batch_size)
@@ -116,10 +114,25 @@ class TFModel(object):
         summary_writer = tf.train.SummaryWriter(self.save_dir, sess.graph)
         ### pool the queueing processed
         sess.run(init)
+        with sess:
+            try:
+                ckpt = tf.train.get_checkpoint_state(self.save_dir)
+                if ckpt and ckpt.model_checkpoint_path:
+                    # Restores from checkpoint
+                    saver.restore(sess, ckpt.model_checkpoint_path)
+                    # Assuming model_checkpoint_path looks something like:
+                    #   /my-favorite-path/cifar10_train/model.ckpt-0,
+                    # extract global_step from it.
+                    global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+                else:
+                    global_step = tf.Variable(0, trainable=False)
+
+                except:
+                    global_step = tf.Variable(0, trainable=False)
         tf.train.start_queue_runners(sess=sess)
         steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
         training_iter = int(total_epochs * steps_per_epoch)
-        for step in xrange(training_iter):
+        for step in xrange(global_step, training_iter):
             start_time = time.time()
             sess.run(train_op)
             _, loss_value = sess.run([train_op, loss])
