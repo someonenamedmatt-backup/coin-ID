@@ -22,4 +22,6 @@ def encode_rad(input, n_labels, do=True):
     l = tf_helpers.get_radian_conv("conv9",l,width = 1,height = 1, dim = n_labels, stride = 1)
     l = tf.nn.avg_pool(l, [1,8,8,1],[1,1,1,1],'VALID', name = 'avg_pool2')
     l = tf.contrib.layers.flatten(l)
+    l = tf_helpers.get_softmax_linear_layer("softmax_linear",l,n_labels)
+
     return l
