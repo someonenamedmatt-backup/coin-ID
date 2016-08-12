@@ -59,7 +59,7 @@ def input(file_list, batch_size):
                                 [read_input.image,read_input.grade,read_input.name],
                                 batch_size=batch_size,
                                 num_threads=num_preprocess_threads,
-                                capacity=batch_size * 6)
+                                capacity=batch_size * 4)
 
     # Display the training images in the visualizer.
     # tf.image_summary('images', image_batch)

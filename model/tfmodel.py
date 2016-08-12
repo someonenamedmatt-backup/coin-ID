@@ -79,17 +79,16 @@ class TFModel(object):
                 saver.save(sess, checkpoint_path, global_step=step)
         return test
 
-    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False):
+    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False, do = True):
     #name labels say Grade = False
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
         global_step = tf.Variable(0, trainable=False)
-
         class_weights = tf.constant(coinlabel.get_class_weights(), tf.float32)
         # Build a Graph that computes the logits predictions from the
         # inference model.
         feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False), self.batch_size)
-        logits = self.encoding(feature_batch, coinlabel.n_labels)
+        logits = self.encoding(feature_batch, coinlabel.n_labels, do)
         weighted_logits = tf.mul(logits, class_weights)
         if use_logit:
             logit_pred, logit_cost = self._add_logit(grade_batch,name_batch, coinlabel.n_names, coinlabel.n_grades)

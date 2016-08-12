@@ -23,28 +23,27 @@ def get_conv(name, input, width, height, dim, reuse=False, pool=True):
         _activation_summary(conv)
     return (conv)
 
-def get_pool_and_lrn(input, num):
-        l = tf.nn.max_pool(input, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
+def get_pool_and_lrn(input, num, ksize=2, strides=2):
+        l = tf.nn.max_pool(input, ksize=[1, ksize, ksize, 1], strides=[1, strides, strides, 1],
                                padding='SAME', name='pool'+str(num))
-        output = tf.nn.lrn(l, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                                                  name='norm'+str(num))
+        output = tf.nn.lrn(l, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm'+str(num))
         return output
 
-def get_radian_conv(name, input, width, height, dim, pad=True,reuse=False, pool=True):
+def get_radian_conv(name, input, width, height, dim,stride = 1, pad=True,reuse=False, pool=True):
     """ Get convolution to find features in a convolution """
     with tf.variable_scope(name, reuse=reuse) as scope:
         kernel = tf.get_variable("weights", shape=[width, height, input.get_shape()[3].value, dim], initializer=tf.contrib.layers.xavier_initializer())
         if pad:
             input = pad_radian(input,width-1, height - 1)
-        conv = tf.nn.conv2d(input, kernel, [1,1,1,1], padding='VALID')
+        conv = tf.nn.conv2d(input, kernel, [1,stride,stride,1], padding='VALID')
         b = tf.get_variable("bias",shape=[dim])
         conv = tf.nn.bias_add(conv, b)
         conv = tf.nn.relu(conv)
         _activation_summary(conv)
     return (conv)
 
-def get_radian_pool(input, num):
-    pool = tf.nn.max_pool(input, [1,2,2,1],[1,2,2,1],'VALID', name = 'pool' + str(num))
+def get_radian_pool(input, num, ksize=2, strides=2):
+    pool = tf.nn.max_pool(input, [1,ksize,ksize,1],[1,strides,strides,1],'VALID', name = 'pool' + str(num))
     return pool
 
 def get_dense_layer_relu(name, input, dim, reuse=False):
