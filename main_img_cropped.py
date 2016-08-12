@@ -4,10 +4,10 @@ from model import model3c2d as model
 
 
 def main():
-        tfm = TFModel(model.encode_img, 'data/img_cropped_3c2d', batch_size = 20)
+        tfm = TFModel(model.encode_img, 'data/saves/m_img_cr_overfit', batch_size = 20)
         coinlabel = CoinLabel('/data/images/', '/home/ubuntu/coin-ID/data/IDnamegrade.csv',
                                 'img', 'grade_lbl', random_state = model.SEED)
-        test = tfm.fit(coinlabel, 100)
+        test = tfm.overt_fit_test(coinlabel)
         # tfm.evaluate(coinlabel)
 
 if __name__ == '__main__':

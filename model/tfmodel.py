@@ -19,65 +19,74 @@ class TFModel(object):
             os.makedirs(save_dir)
         self.moving_average_decay = moving_average_decay
 
-    def fit_test_0(self, coinlabel):
-        #designed to test out the data pipeline
-      with tf.Graph().as_default():
-        feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False)[:100], self.batch_size)
-        train_op = tf.argmax(label_batch, dimension = 0)
-        test = []
-        init = tf.initialize_all_variables()
-        sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
-        sess.run(init)
-        print 2
-        tf.train.start_queue_runners(sess=sess)
-        for step in xrange(250):
-            print step
-            test.append(sess.run(train_op))
-        return test
+    def overt_fit_test(self, coinlabel, total_epochs = 5, grade = True, use_logit = False,load_save = False):
+         with tf.Graph().as_default():
+           #weight the classes for inbalance puproses
+           global_step = tf.Variable(0, trainable=False)
+           feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
+           logits = self.encoding(feature_batch, coinlabel.n_labels, do = False, wd = 0)
+           if use_logit:
+               logit_pred, logit_cost = self._add_logit(grade_batch,name_batch, coinlabel.n_names, coinlabel.n_grades)
+               logits =   tf.mul(logits, logit_pred)
+           # Calculate loss.
+           if grade:
+               loss = tf_helpers.loss(logits, grade_batch)
+           else:
+               loss = tf_helpers.loss(logits, name_batch)
+           if use_logit:
+               loss = loss + logit_cost
+           # Build a Graph that trains the model with one batch of examples and
+           # updates the model parameters.
+           train_op = self._train(loss, global_step)
+           # Create a saver.
+           saver = tf.train.Saver(tf.all_variables())
+           # Build the summary operation based on the TF collection of Summaries.
+           summary_op = tf.merge_all_summaries()
+           # Build an initialization operation to run below.
+           init = tf.initialize_all_variables()
+           # Start running operations on the Graph.
+           sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
+           sess.run(init)
+           summary_writer = tf.train.SummaryWriter(self.save_dir, sess.graph)
+           ### pool the queueing processed
+           sess.run(init)
+           if load_save:
+               ckpt = tf.train.get_checkpoint_state(self.save_dir)
+               if ckpt and ckpt.model_checkpoint_path:
+                   # Restores from checkpoint
+                   saver.restore(sess, ckpt.model_checkpoint_path)
+                   # Assuming model_checkpoint_path looks something like:
+                   #   /my-favorite-path/cifar10_train/model.ckpt-0,
+                   # extract global_step from it.
+                   global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+                   start = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+           else:
+               start = 0
+           tf.train.start_queue_runners(sess=sess)
+           steps_per_epoch = int(len(coinlabel.get_file_list(False))/self.batch_size)
+           training_iter = int(total_epochs * steps_per_epoch)
+           for step in xrange(int(start), training_iter):
+               start_time = time.time()
+               sess.run(train_op)
+               _, loss_value = sess.run([train_op, loss])
+               duration = time.time() - start_time
+               assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
-    def fit_test_1(self, coinlabel):
-        #designed to test out the data pipeline
-      with tf.Graph().as_default():
-        class_weights = tf.constant(coinlabel.get_class_weights())
-        print 1
-        global_step = tf.Variable(0, trainable=False)
-        feature_batch, label_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False)[:100], self.batch_size)
-        train_op = tf.argmax(label_batch, dimension = 0)
-        saver = tf.train.Saver(tf.all_variables())
-        # Build the summary operation based on the TF collection of Summaries.
-        summary_op = tf.merge_all_summaries()
-        print 2
-        # Build an initialization operation to run below.
-        init = tf.initialize_all_variables()
-        # Start running operations on the Graph.
-        sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
-        sess.run(init)
-        summary_writer = tf.train.SummaryWriter(self.save_dir, sess.graph)
-        print 3
-        test = []
-        tf.train.start_queue_runners(sess=sess)
-        for step in xrange(10):
-            print step
-            start_time = time.time()
-            test.append(sess.run(train_op))
-            duration = time.time() - start_time
-            print 4
-            if step % 10 == 0:
-                examples_per_sec = self.batch_size / duration
-                sec_per_batch = float(duration)
-                format_str = ('%s: step %d (%.1f examples/sec; %.3f '
-                'sec/batch)')
-                print(format_str % (datetime.now(), step,
-                examples_per_sec, sec_per_batch))
-
-            if step % 100 == 0:
-                summary_str = sess.run(summary_op)
-                summary_writer.add_summary(summary_str, step)
-            # Save the model checkpoint periodically.
-            if step % 1000 == 0:
-                checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
-                saver.save(sess, checkpoint_path, global_step=step)
-        return test
+               if step % 10 == 0:
+                   examples_per_sec = self.batch_size / duration
+                   sec_per_batch = float(duration)
+                   current_epoch = int( step / steps_per_epoch)
+                   estimated_time_left = duration * (training_iter - step)/3600
+                   format_str = ('step %d. Epoch %d out of %d. loss = %.2f (%.1f examples/sec; %.3f '
+                   'sec/batch). Estimated time left: %.4f hours')
+                   print(format_str % (step,current_epoch,total_epochs, loss_value, examples_per_sec, sec_per_batch, estimated_time_left))
+               if step % 100 == 0:
+                   summary_str = sess.run(summary_op)
+                   summary_writer.add_summary(summary_str, step)
+               # Save the model checkpoint periodically.
+               if step % 1000 == 0 or (step + 1) == training_iter:
+                   checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
+                   saver.save(sess, checkpoint_path, global_step=step)
 
     def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False, do = True):
     #name labels say Grade = False

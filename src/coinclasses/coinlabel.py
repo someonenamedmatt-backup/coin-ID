@@ -42,6 +42,11 @@ class CoinLabel:
         #needs to be absolute file path
         return np.load(file),self.label_dct[file]
 
+    def get_overfit_test_list(self):
+        lst = []
+        for value in self.train_df.unique()[:4]:
+            lst.extend(self.train_df[self.train_df == value].index.values[:5])
+        return lst
 
     def get_file_list(self, test = True):
         if test:

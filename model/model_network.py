@@ -23,5 +23,4 @@ def encode_rad(input, n_labels, do=True):
     l = tf.nn.avg_pool(l, [1,8,8,1],[1,1,1,1],'VALID', name = 'avg_pool2')
     l = tf.contrib.layers.flatten(l)
     l = tf_helpers.get_softmax_linear_layer("softmax_linear",l,n_labels)
-
     return l
