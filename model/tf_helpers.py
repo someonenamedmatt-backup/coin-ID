@@ -46,7 +46,7 @@ def get_radian_pool(input, num, ksize=2, strides=2):
     pool = tf.nn.max_pool(input, [1,ksize,ksize,1],[1,strides,strides,1],'VALID', name = 'pool' + str(num))
     return pool
 
-def get_dense_layer_relu(name, input, dim, reuse=False, wd):
+def get_dense_layer_relu(name, input, dim, reuse=False, wd = .04):
     with tf.variable_scope(name, reuse=reuse):
         input_ = tf.reshape(input, [input.get_shape()[0].value,-1])
         w = tf.get_variable("w", shape=[input_.get_shape()[1].value,dim], initializer=tf.contrib.layers.xavier_initializer() )
