@@ -11,8 +11,7 @@ def encode_rad(input, n_labels, do=True):
     l = tf_helpers.get_radian_conv("conv2",input,width = 5,height = 5, dim = 128, stride = 1)
     l = tf_helpers.get_pool_and_lrn(l, 2, ksize=3, strides=2)
 
-    l = tf_helpers.get_radian_conv("conv3",input,width = 3,height = 3, dim = 128, stride = 1)
-    l = tf_helpers.get_radian_conv("conv4",input,width = 3,height = 3, dim = 128, stride = 1)
+    l = tf_helpers.get_radian_conv("conv3",input,width = 3,height = 3, dim = 128, stride = 1)    
     l = tf_helpers.get_radian_conv("conv5",input,width = 3,height = 3, dim = 96, stride = 1)
     l = tf_helpers.get_pool_and_lrn(l, 3, ksize=3, strides=2)
 
