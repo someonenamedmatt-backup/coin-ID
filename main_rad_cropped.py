@@ -6,7 +6,7 @@ def main():
         tfm = TFModel(model3c2d.encode_rad, 'data/rad_cropped_3c2d')
         coinlabel = CoinLabel('/data2/processed/cropped/', '/home/ubuntu/coin/data/IDnamegrade.csv',
                                 'rad', 'grade_lbl', random_state = model3c2d.SEED)
-        test = tfm.fit(coinlabel, 100)
+        test = tfm.fit(coinlabel, 100, load_save = True)
         # tfm.evaluate(coinlabel)
 
 if __name__ == '__main__':
