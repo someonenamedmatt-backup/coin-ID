@@ -205,7 +205,7 @@ class TFModel(object):
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
         else:
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True), self.batch_size)
-        logits = self.encoding(feature_batch, coinlabel.n_labels, do = Fals)
+        logits = self.encoding(feature_batch, coinlabel.n_labels, do = False)
         #find top k predictions
         if grade:
             top_k_op = tf.nn.in_top_k(logits, grade_batch, 1)
