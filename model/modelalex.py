@@ -16,10 +16,10 @@ def encode_rad(input, n_labels, do=True):
     l = tf_helpers.get_radian_conv("conv5",input,width = 3,height = 3, dim = 96, stride = 1)
     l = tf_helpers.get_pool_and_lrn(l, 3, ksize=3, strides=2)
 
-    l = tf_helpers.get_dense_layer_relu("dense1",l,512)
+    l = tf_helpers.get_dense_layer_relu("dense1",l,400)
     if do:
        l = tf.nn.dropout(l,.5)
-    l = tf_helpers.get_dense_layer_relu("dense2",l,512)
+    l = tf_helpers.get_dense_layer_relu("dense2",l,400)
     if do:
        l = tf.nn.dropout(l,.5)
     l = tf_helpers.get_softmax_linear_layer("softmax_linear",l,n_labels)
