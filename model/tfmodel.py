@@ -24,7 +24,7 @@ class TFModel(object):
            #weight the classes for inbalance puproses
            global_step = tf.Variable(0, trainable=False)
            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
-           logits = self.encoding(feature_batch, coinlabel.n_labels, do = False, wd = 0.0)
+           logits = self.encoding(feature_batch, coinlabel.n_labels, do = False, weight_decay = 0.0)
            if use_logit:
                logit_pred, logit_cost = self._add_logit(grade_batch,name_batch, coinlabel.n_names, coinlabel.n_grades)
                logits =   tf.mul(logits, logit_pred)

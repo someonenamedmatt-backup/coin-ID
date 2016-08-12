@@ -6,7 +6,7 @@ def main():
         tfm = TFModel(model.encode_rad, 'data/m_rad_cr_network_overfit', batch_size = 10)
         coinlabel = CoinLabel('/data/images/', '/home/ubuntu/coin-ID/data/IDnamegrade.csv',
                                 'rad', 'grade_lbl', random_state = model.SEED)
-        test = tfm.fit(coinlabel)
+        test = tfm.overfit_test(coinlabel)
 
         # tfm.evaluate(coinlabel)
 
