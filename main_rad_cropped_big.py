@@ -1,6 +1,6 @@
 from model.tfmodel import TFModel
 from src.coinclasses.coinlabel import CoinLabel
-from model import modelalex as model
+from model import model_network as model
 
 def main():
         tfm = TFModel(model.encode_rad, 'data/rad_cropped_network', batch_size = 10)
