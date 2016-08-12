@@ -3,10 +3,10 @@ from src.coinclasses.coinlabel import CoinLabel
 from model import model3c2d as model
 
 def main():
-        tfm = TFModel(model.encode_img, 'data/saves/m_img_wh', batch_size = 20)
+        tfm = TFModel(model.encode_img, 'data/saves/m_img_wh_v0')
         coinlabel = CoinLabel('/data/images/', '/home/ubuntu/coin-ID/data/IDnamegrade.csv',
                                 'img', 'grade_lbl', random_state = model.SEED)
-        test = tfm.overt_fit_test(coinlabel)
+        test = tfm.fit(coinlabel, total_epochs = 25)
 
         # tfm.evaluate(coinlabel)
 

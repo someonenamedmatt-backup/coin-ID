@@ -19,7 +19,7 @@ class TFModel(object):
             os.makedirs(save_dir)
         self.moving_average_decay = moving_average_decay
 
-    def overt_fit_test(self, coinlabel, total_epochs = 5, grade = True, use_logit = False,load_save = False):
+    def over_fit_test(self, coinlabel, total_epochs = 5, grade = True, use_logit = False,load_save = False):
          with tf.Graph().as_default():
            #weight the classes for inbalance puproses
            global_step = tf.Variable(0, trainable=False)
@@ -199,11 +199,13 @@ class TFModel(object):
         cost = tf.reduce_mean(-tf.reduce_sum(one_hot_grades*tf.log(pred), reduction_indices=1), name = "wide_cross_entropy")
         return pred, cost
 
-
-    def evaluate(self, coinlabel, grade = True):
+    def evaluate(self, coinlabel, grade = True, over_fit_test = False):
       with tf.Graph().as_default() as g:
-        feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True), self.batch_size)
-        logits = self.encoding(feature_batch, coinlabel.n_labels)
+        if over_fit_test:
+            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
+        else:
+            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True), self.batch_size)
+        logits = self.encoding(feature_batch, coinlabel.n_labels, do = Fals)
         #find top k predictions
         if grade:
             top_k_op = tf.nn.in_top_k(logits, grade_batch, 1)
@@ -255,3 +257,4 @@ class TFModel(object):
                 coord.request_stop(e)
             coord.request_stop()
             coord.join(threads, stop_grace_period_secs=10)
+            return precision
