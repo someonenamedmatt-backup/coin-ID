@@ -12,7 +12,7 @@ def pad_radian(layer, pad_width, pad_dist):
     l = tf.pad(l,[[0,0],[0,pad_width],[0,0],[0,0]],"CONSTANT")
     return (l)
 
-def get_conv(name, input, width, height, dim, reuse=False, pool=True):
+def get_conv(name, input, width, height, dim, stride = 1, reuse=False, pool=True):
     """ Get convolution to find features in a convolution """
     with tf.variable_scope(name, reuse=reuse) as scope:
         kernel = tf.get_variable("weights", shape=[width, height, input.get_shape()[3].value, dim], initializer=tf.contrib.layers.xavier_initializer())
@@ -46,11 +46,11 @@ def get_radian_pool(input, num, ksize=2, strides=2):
     pool = tf.nn.max_pool(input, [1,ksize,ksize,1],[1,strides,strides,1],'VALID', name = 'pool' + str(num))
     return pool
 
-def get_dense_layer_relu(name, input, dim, reuse=False):
+def get_dense_layer_relu(name, input, dim, reuse=False, wd):
     with tf.variable_scope(name, reuse=reuse):
         input_ = tf.reshape(input, [input.get_shape()[0].value,-1])
         w = tf.get_variable("w", shape=[input_.get_shape()[1].value,dim], initializer=tf.contrib.layers.xavier_initializer() )
-        weight_decay = tf.mul(tf.nn.l2_loss(w), .04, name='weight_loss')
+        weight_decay = tf.mul(tf.nn.l2_loss(w), wd, name='weight_loss')
         tf.add_to_collection('losses', weight_decay)
         b = tf.get_variable("b", shape=[dim])
         output = tf.nn.relu(tf.matmul(input_,w) + b)
