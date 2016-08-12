@@ -3,7 +3,7 @@ import tf_helpers
 
 SEED = 22
 
-def encode_rad(input, n_labels, do=True):
+def encode_rad(input, n_labels, do=True, weight_decay = 0):
     #do is dropouts, true for training, false for testing
     l = tf_helpers.get_radian_conv("conv1",input,width = 5,height = 5, dim = 192, stride = 1)
     l = tf_helpers.get_radian_conv("conv2",l,width = 1,height = 1, dim = 160, stride = 1)
