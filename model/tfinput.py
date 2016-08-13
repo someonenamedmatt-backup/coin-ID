@@ -1,7 +1,8 @@
 from __future__ import division
 import tensorflow as tf
+SIZE = (64,64)
 
-def read_coin(filename_queue):
+def read_coin(filename_queue, distort_img)):
     """Reads and parses coin data
       Args:
     filename_queue: A queue of strings with the filenames to read from.
@@ -29,13 +30,31 @@ def read_coin(filename_queue):
     result.key, value = reader.read(filename_queue)
     decoded = tf.cast(tf.decode_raw(value, tf.float64),tf.float32)
 
+
+
     result.grade = tf.cast(tf.slice(decoded, [image_bytes],[label_bytes]), tf.int32)
     result.name = tf.cast(tf.slice(decoded, [image_bytes+1],[label_bytes]), tf.int32)
-    result.image = tf.reshape(tf.slice(decoded, [0], [image_bytes]),[result.height,result.width,result.depth])
+    result.image = tf.image.resize_images(tf.reshape(tf.slice(decoded, [0], [image_bytes]),[result.height,result.width,result.depth]),SIZE[0],SIZE[1])
+    if distort_img:
+          result.image = tf.image.random_flip_left_right(result.image)
+            # Randomly flip the image horizontally.
+                # Because these operations are not commutative, consider randomizing
+          # the order their operation.
+          result.image = tf.image.random_brightness(result.image,
+                                                       max_delta=63)
+          result.image = tf.image.random_contrast(result.image,
+                                                     lower=0.2, upper=1.8)
+
+          # Subtract off the mean and divide by the variance of the pixels.
+
+
+
+    result.image = tf.image.per_image_whitening(result.image)
+
     #not sure which is heigh vs width but its consistent
     return result
 
-def input(file_list, batch_size):
+def input(file_list, batch_size, distort_img = False):
     """Construct a queued batch of images and labels.
     Args:
     image: 3-D Tensor of [height, width, 3] of type.float64.
@@ -53,7 +72,7 @@ def input(file_list, batch_size):
     #         raise ValueError('Failed to find file: ' + f)
 
     filename_queue = tf.train.string_input_producer(file_list)
-    read_input = read_coin(filename_queue)
+    read_input = read_coin(filename_queue, distort_img)
     num_preprocess_threads = 16
     image_batch, grade_batch, name_batch = tf.train.batch(
                                 [read_input.image,read_input.grade,read_input.name],

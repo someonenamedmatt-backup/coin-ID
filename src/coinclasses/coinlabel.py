@@ -4,6 +4,7 @@ import tensorflow as tf
 import pandas as pd
 from sklearn.cross_validation import train_test_split
 import numpy as np
+from random import shuffle
 
 class CoinLabel:
     #class for managing coins
@@ -53,3 +54,13 @@ class CoinLabel:
             return list(self.test_df.index.values)
         else:
             return list(self.train_df.index.values)
+
+    def get_balanced_class_filelist(self, num_per_class, test = True):
+        lst = [np.random.choice(test_df[test_df == label])]
+        for label in self.train_df.unique():
+            if test:
+                lst += np.random.choice(self.test_df[self.test_df == label].values, num_per_class)
+            else:
+                lst += np.random.choice(self.train_df[self.train_df == label].values, num_per_class)
+        shuffle lst
+        return lst

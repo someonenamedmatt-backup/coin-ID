@@ -8,6 +8,7 @@ import threading
 import time
 from datetime import datetime
 import math
+from src.coinclasses.coin import Coin
 
 class TFModel(object):
     def __init__(self, encoding, save_dir, batch_size = 30, num_epochs_per_decay = 25, moving_average_decay = .9999):
@@ -19,7 +20,7 @@ class TFModel(object):
             os.makedirs(save_dir)
         self.moving_average_decay = moving_average_decay
 
-    def over_fit_test(self, coinlabel, total_epochs = 5, grade = True, use_logit = False,load_save = False):
+    def over_fit_test(self, coinlabel, total_epochs = 5, grade = True, use_logit = False,load_save = False, balance_classes = False):
          with tf.Graph().as_default():
            #weight the classes for inbalance puproses
            global_step = tf.Variable(0, trainable=False)
@@ -88,25 +89,29 @@ class TFModel(object):
                    checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
                    saver.save(sess, checkpoint_path, global_step=step)
 
-    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False, do = True):
+    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False, do = True, balance_classes = False):
     #name labels say Grade = False
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
         global_step = tf.Variable(0, trainable=False)
-        class_weights = tf.constant(coinlabel.get_class_weights(), tf.float32)
+        if not balance_classes:
+            class_weights = tf.constant(coinlabel.get_class_weights(), tf.float32)
         # Build a Graph that computes the logits predictions from the
         # inference model.
-        feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False), self.batch_size)
+            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False), self.batch_size)
+        else:
+            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_balanced_class_filelist(test = False), self.batch_size)
         logits = self.encoding(feature_batch, coinlabel.n_labels, do)
-        weighted_logits = tf.mul(logits, class_weights)
+        if not balance_classes:
+            logits = tf.mul(logits, class_weights)
         if use_logit:
             logit_pred, logit_cost = self._add_logit(grade_batch,name_batch, coinlabel.n_names, coinlabel.n_grades)
-            weighted_logits =   tf.mul(weighted_logits, logit_pred)
+            logits =   tf.mul(logits, logit_pred)
         # Calculate loss.
         if grade:
-            loss = tf_helpers.loss(weighted_logits, grade_batch)
+            loss = tf_helpers.loss(logits, grade_batch)
         else:
-            loss = tf_helpers.loss(weighted_logits, name_batch)
+            loss = tf_helpers.loss(logits, name_batch)
         if use_logit:
             loss = loss + logit_cost
         # Build a Graph that trains the model with one batch of examples and
@@ -191,13 +196,15 @@ class TFModel(object):
         return train_op
 
     def _add_logit(self, grade_batch,name_batch, num_names, num_grades):
-        one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
         one_hot_names = tf.one_hot(name_batch, num_names,dtype = tf.float32,  axis = 1)
         W = tf.Variable(tf.zeros([num_names, num_grades]))
         b = tf.Variable(tf.zeros([num_grades]))
         pred = tf.nn.softmax(tf.matmul(one_hot_names, W) + b, name = "wide_prediction") # Softmax
-        cost = tf.reduce_mean(-tf.reduce_sum(one_hot_grades*tf.log(pred), reduction_indices=1), name = "wide_cross_entropy")
-        return pred, cost
+        if name_batch is not None:
+            one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
+            cost = tf.reduce_mean(-tf.reduce_sum(one_hot_grades*tf.log(pred), reduction_indices=1), name = "wide_cross_entropy")
+            return pred, cost
+        return pred
 
     def evaluate(self, coinlabel, grade = True, over_fit_test = False):
       with tf.Graph().as_default() as g:
@@ -237,7 +244,10 @@ class TFModel(object):
                 for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
                     threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
                                      start=True))
-                num_iter = int(math.ceil(len(coinlabel.test_df) / self.batch_size))
+                if over_fit_test:
+                    num_iter = 20
+                else:
+                    num_iter = int(math.ceil(len(coinlabel.test_df) / self.batch_size))
                 true_count = 0  # Counts the number of correct predictions.
                 total_sample_count = num_iter * self.batch_size
                 step = 0
@@ -258,3 +268,31 @@ class TFModel(object):
             coord.request_stop()
             coord.join(threads, stop_grace_period_secs=10)
             return precision
+
+    def predict_one(img_file, name_lbl = None, crop = False, rad = False, n_labels = 4):
+        #if a name label is set we're assuming a wide and deep model
+      with tf.Graph().as_default() as g:
+        if rad:
+            coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).rad
+        else:
+            coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).img
+        logits = self.encoding(coin, n_labels, do = False)
+        if name_lbl is not None:
+            logit_pred = self._add_logit(grade_batch = None,name_batch, coinlabel.n_names, coinlabel.n_grades)
+            logits =   tf.mul(logits, logit_pred)
+        predict = tf.nn.top_k(logits)
+        #find top k predictions
+        variable_averages = tf.train.ExponentialMovingAverage(
+                                        self.moving_average_decay)
+        variables_to_restore = variable_averages.variables_to_restore()
+            with tf.Session() as sess:
+                ckpt = tf.train.get_checkpoint_state(self.save_dir)
+                if ckpt and ckpt.model_checkpoint_path:
+                    # Restores from checkpoint
+                    saver.restore(sess, ckpt.model_checkpoint_path)
+                    # extract global_step from it.
+                else:
+                    print('No checkpoint file found')
+                    return
+                prediction = sess.run([predict])
+        return prediction

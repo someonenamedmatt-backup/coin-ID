@@ -2,7 +2,7 @@ from model.tfmodel import TFModel
 from src.coinclasses.coinlabel import CoinLabel
 from model import model3c2d as model
 from model import model_network
-
+import tensorflow as tf
 
 
 def main():
