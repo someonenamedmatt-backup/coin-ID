@@ -2,7 +2,7 @@ from __future__ import division
 import tensorflow as tf
 SIZE = (64,64)
 
-def read_coin(filename_queue, distort_img)):
+def read_coin(filename_queue, distort_img):
     """Reads and parses coin data
       Args:
     filename_queue: A queue of strings with the filenames to read from.
