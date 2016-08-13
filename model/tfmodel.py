@@ -8,7 +8,7 @@ import threading
 import time
 from datetime import datetime
 import math
-from src.coinclasses.coin import Coin
+# from src.coinclasses.coin import Coin
 
 class TFModel(object):
     def __init__(self, encoding, save_dir, batch_size = 30, num_epochs_per_decay = 25, moving_average_decay = .9999):
