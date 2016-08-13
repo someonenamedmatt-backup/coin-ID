@@ -62,5 +62,5 @@ class CoinLabel:
                 lst += np.random.choice(self.test_df[self.test_df == label].values, num_per_class)
             else:
                 lst += np.random.choice(self.train_df[self.train_df == label].values, num_per_class)
-        shuffle lst
+        shuffle(lst)
         return lst
