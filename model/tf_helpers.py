@@ -23,8 +23,8 @@ def get_conv(name, input, width, height, dim, stride = 1, reuse=False, pool=True
         _activation_summary(conv)
     return (conv)
 
-def get_pool_and_lrn(input, num, ksize=2, strides=2):
-        l = tf.nn.max_pool(input, ksize=[1, ksize, ksize, 1], strides=[1, strides, strides, 1],
+def get_pool_and_lrn(input, num, ksize=2, stride=2):
+        l = tf.nn.max_pool(input, ksize=[1, ksize, ksize, 1], stride=[1, stride, stride, 1],
                                padding='SAME', name='pool'+str(num))
         output = tf.nn.lrn(l, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm'+str(num))
         return output
@@ -42,8 +42,8 @@ def get_radian_conv(name, input, width, height, dim,stride = 1, pad=True,reuse=F
         _activation_summary(conv)
     return (conv)
 
-def get_radian_pool(input, num, ksize=2, strides=2):
-    pool = tf.nn.max_pool(input, [1,ksize,ksize,1],[1,strides,strides,1],'VALID', name = 'pool' + str(num))
+def get_radian_pool(input, num, ksize=2, stride=2):
+    pool = tf.nn.max_pool(input, [1,ksize,ksize,1],[1,stride,stride,1],'VALID', name = 'pool' + str(num))
     return pool
 
 def get_dense_layer_relu(name, input, dim, reuse=False, wd = .04):
