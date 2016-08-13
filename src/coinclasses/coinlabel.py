@@ -56,7 +56,7 @@ class CoinLabel:
             return list(self.train_df.index.values)
 
     def get_balanced_class_filelist(self, num_per_class, test = True):
-        lst = [np.random.choice(test_df[test_df == label])]
+        lst = []
         for label in self.train_df.unique():
             if test:
                 lst += np.random.choice(self.test_df[self.test_df == label].values, num_per_class)
