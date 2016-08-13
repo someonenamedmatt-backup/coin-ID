@@ -100,7 +100,7 @@ class TFModel(object):
         # inference model.
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False), self.batch_size)
         else:
-            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_balanced_class_filelist(test = False, 4), self.batch_size)
+            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_balanced_class_filelist(test = False, num_per_class= 4), self.batch_size)
         logits = self.encoding(feature_batch, coinlabel.n_labels, do)
         if not balance_classes:
             logits = tf.mul(logits, class_weights)
