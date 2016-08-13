@@ -285,14 +285,14 @@ class TFModel(object):
         variable_averages = tf.train.ExponentialMovingAverage(
                                         self.moving_average_decay)
         variables_to_restore = variable_averages.variables_to_restore()
-            with tf.Session() as sess:
-                ckpt = tf.train.get_checkpoint_state(self.save_dir)
-                if ckpt and ckpt.model_checkpoint_path:
-                    # Restores from checkpoint
-                    saver.restore(sess, ckpt.model_checkpoint_path)
-                    # extract global_step from it.
-                else:
-                    print('No checkpoint file found')
-                    return
-                prediction = sess.run([predict])
+        with tf.Session() as sess:
+            ckpt = tf.train.get_checkpoint_state(self.save_dir)
+            if ckpt and ckpt.model_checkpoint_path:
+                # Restores from checkpoint
+                saver.restore(sess, ckpt.model_checkpoint_path)
+                # extract global_step from it.
+            else:
+                print('No checkpoint file found')
+                return
+            prediction = sess.run([predict])
         return prediction
