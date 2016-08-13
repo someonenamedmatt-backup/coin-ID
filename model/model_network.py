@@ -8,7 +8,7 @@ def encode_rad(input, n_labels, do=True, weight_decay = 0):
     l = tf_helpers.get_radian_conv("conv1",input,width = 5,height = 5, dim = 192, stride = 1)
     l = tf_helpers.get_radian_conv("conv2",l,width = 1,height = 1, dim = 160, stride = 1)
     l = tf_helpers.get_radian_conv("conv3",l,width = 1,height = 1, dim = 96, stride = 1)
-    l = tf_helpers.get_radian_pool(l,1, ksize = 3, strides = 2)
+    l = tf_helpers.get_radian_pool(l,1, ksize = 3, stride1 = 2)
     if do:
        l = tf.nn.dropout(l,.5)
     l = tf_helpers.get_radian_conv("conv4",l,width = 5,height = 5, dim = 192, stride = 1)
