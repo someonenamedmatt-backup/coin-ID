@@ -59,8 +59,8 @@ class CoinLabel:
         lst = []
         for label in self.train_df.unique():
             if test:
-                lst += np.random.choice(self.test_df[self.test_df == label].values, num_per_class)
+                lst += list(np.random.choice(self.test_df[self.test_df == label].values, num_per_class))
             else:
-                lst += np.random.choice(self.train_df[self.train_df == label].values, num_per_class)
+                lst += list(np.random.choice(self.train_df[self.train_df == label].values, num_per_class))
         shuffle(lst)
         return lst
