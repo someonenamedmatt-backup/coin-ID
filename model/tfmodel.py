@@ -269,30 +269,30 @@ class TFModel(object):
             coord.join(threads, stop_grace_period_secs=10)
             return precision
 
-    def predict_one(img_file, name_lbl = None, crop = False, rad = False, n_labels = 4):
-        #if a name label is set we're assuming a wide and deep model
-      with tf.Graph().as_default() as g:
-        if rad:
-            coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).rad
-        else:
-            coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).img
-        logits = self.encoding(coin, n_labels, do = False)
-        if name_lbl is not None:
-            logit_pred = self._add_logit(grade_batch = None,name_batch, coinlabel.n_names, coinlabel.n_grades)
-            logits =   tf.mul(logits, logit_pred)
-        predict = tf.nn.top_k(logits)
-        #find top k predictions
-        variable_averages = tf.train.ExponentialMovingAverage(
-                                        self.moving_average_decay)
-        variables_to_restore = variable_averages.variables_to_restore()
-        with tf.Session() as sess:
-            ckpt = tf.train.get_checkpoint_state(self.save_dir)
-            if ckpt and ckpt.model_checkpoint_path:
-                # Restores from checkpoint
-                saver.restore(sess, ckpt.model_checkpoint_path)
-                # extract global_step from it.
-            else:
-                print('No checkpoint file found')
-                return
-            prediction = sess.run([predict])
-        return prediction
+    # def predict_one(img_file, name_lbl = None, crop = False, rad = False, n_labels = 4):
+    #     #if a name label is set we're assuming a wide and deep model
+    #   with tf.Graph().as_default() as g:
+    #     if rad:
+    #         coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).rad
+    #     else:
+    #         coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).img
+    #     logits = self.encoding(coin, n_labels, do = False)
+    #     if name_lbl is not None:
+    #         logit_pred = self._add_logit(grade_batch = None,name_batch, coinlabel.n_names, coinlabel.n_grades)
+    #         logits =   tf.mul(logits, logit_pred)
+    #     predict = tf.nn.top_k(logits)
+    #     #find top k predictions
+    #     variable_averages = tf.train.ExponentialMovingAverage(
+    #                                     self.moving_average_decay)
+    #     variables_to_restore = variable_averages.variables_to_restore()
+    #     with tf.Session() as sess:
+    #         ckpt = tf.train.get_checkpoint_state(self.save_dir)
+    #         if ckpt and ckpt.model_checkpoint_path:
+    #             # Restores from checkpoint
+    #             saver.restore(sess, ckpt.model_checkpoint_path)
+    #             # extract global_step from it.
+    #         else:
+    #             print('No checkpoint file found')
+    #             return
+    #         prediction = sess.run([predict])
+    #     return prediction
