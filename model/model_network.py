@@ -45,7 +45,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100, weight_decay = .004):
     l = tf.contrib.layers.flatten(l)
     # softmax, i.e. softmax(WX + b)
     with tf.variable_scope('softmax_linear') as scope:
-        weights = tf_helpers._variable_with_weight_decay('weights', [192, n_labels],
+        weights = tf_helpers._variable_with_weight_decay('weights', [l.get_shape()[1].values, n_labels],
                                               stddev=1/192.0, wd=None)
         biases = tf_helpers._variable_on_cpu('biases', [n_labels],
                                   tf.constant_initializer(0.0))
