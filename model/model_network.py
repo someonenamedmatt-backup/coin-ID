@@ -29,7 +29,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100, weight_decay = .004):
     l = tf_helpers.get_conv("conv1",input,width = 5,height = 5, dim = 192, stride = 1)
     l = tf_helpers.get_conv("conv2",l,width = 1,height = 1, dim = 160, stride = 1)
     l = tf_helpers.get_conv("conv3",l,width = 1,height = 1, dim = 96, stride = 1)
-    l = tf_helpers.get_pool(l,1, ksize = 3, stride = 2)
+    l = tf_helpers.get_radian_pool(l,1, ksize = 3, stride = 2)
     if do:
        l = tf.nn.dropout(l,.5)
     l = tf_helpers.get_conv("conv4",l,width = 5,height = 5, dim = 192, stride = 1)
