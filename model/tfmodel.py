@@ -20,12 +20,12 @@ class TFModel(object):
             os.makedirs(save_dir)
         self.moving_average_decay = moving_average_decay
 
-    def over_fit_test(self, coinlabel, total_epochs = 5, grade = True, use_logit = False,load_save = False, balance_classes = False):
+    def over_fit_test(self, coinlabel, total_epochs = 5, grade = True, use_logit = False,load_save = False, balance_classes = False, wd = .0004):
          with tf.Graph().as_default():
            #weight the classes for inbalance puproses
            global_step = tf.Variable(0, trainable=False)
            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
-           logits = self.encoding(feature_batch, coinlabel.n_labels, do = False, weight_decay = 0.0)
+           logits = self.encoding(feature_batch, coinlabel.n_labels, do = False, weight_decay = wd)
            if use_logit:
                logit_pred, logit_cost = self._add_logit(grade_batch,name_batch, coinlabel.n_names, coinlabel.n_grades)
                logits =   tf.mul(logits, logit_pred)
@@ -89,7 +89,7 @@ class TFModel(object):
                    checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
                    saver.save(sess, checkpoint_path, global_step=step)
 
-    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False, do = True, balance_classes = False):
+    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False, do = True, balance_classes = False, weight_decay = .0004):
     #name labels say Grade = False
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
@@ -101,7 +101,7 @@ class TFModel(object):
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = False), self.batch_size)
         else:
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_balanced_class_filelist(test = False, num_per_class= 25000), self.batch_size)
-        logits = self.encoding(feature_batch, coinlabel.n_labels, do, self.batch_size)
+        logits = self.encoding(feature_batch, coinlabel.n_labels, do, self.batch_size, weight_decay)
         if not balance_classes:
             logits = tf.mul(logits, class_weights)
         if use_logit:
