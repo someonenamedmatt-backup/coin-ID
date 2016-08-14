@@ -1,7 +1,7 @@
 from model.tfmodel import TFModel
 from src.coinclasses.coinlabel import CoinLabel
 from model import model3c2d as model
-
+import sys
 
 def train_model(label, save_name, coin_prop ):
     coinlabel = CoinLabel('/data/'+coin_prop, '/home/ubuntu/coin-ID/data/IDlabel.csv',
