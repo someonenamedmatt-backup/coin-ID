@@ -4,7 +4,7 @@ from model import model3c2d as model
 import sys
 
 def train_model(label, save_name, coin_prop ):
-    coinlabel = CoinLabel('/data/'+coin_prop, '/home/ubuntu/coin-ID/data/IDlabel.csv',
+    coinlabel = CoinLabel('/data/'+coin_prop, '/home/ubuntu/coin-ID/data/IDnamegrade.csv',
                                             coin_prop, label, random_state = model.SEED)
     if coin_prop == 'rad':
         tfm =  TFModel(model.encode_rad, '/home/ubuntu/coin-ID/data/saves/' + save_name)
