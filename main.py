@@ -10,7 +10,7 @@ def train_model(label, save_name, coin_prop ):
         tfm =  TFModel(model.encode_rad, '/home/ubuntu/coin-ID/data/saves/' + save_name)
     else:
         tfm =  TFModel(model.encode_img, '/home/ubuntu/coin-ID/data/saves/' + save_name)
-    return coinlabel, tfm
+    return tfm, coinlabel
 
 
 if __name__ == '__main__':
