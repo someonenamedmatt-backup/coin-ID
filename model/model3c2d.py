@@ -25,7 +25,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
                                              shape=[5, 5, 3, 64],
                                              stddev=5e-2,
                                              wd=0.0)
-        conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
+        conv = tf.nn.conv2d(input, kernel, [1, 1, 1, 1], padding='SAME')
         biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
         bias = tf.nn.bias_add(conv, biases)
         conv1 = tf.nn.relu(bias, name=scope.name)
