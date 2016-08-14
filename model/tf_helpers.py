@@ -15,13 +15,17 @@ def pad_radian(layer, pad_width, pad_dist):
 def get_conv(name, input, width, height, dim, stride = 1, reuse=False, pool=True):
     """ Get convolution to find features in a convolution """
     with tf.variable_scope(name, reuse=reuse) as scope:
-        kernel = tf.get_variable("weights", shape=[width, height, input.get_shape()[3].value, dim], initializer=tf.contrib.layers.xavier_initializer())
+        kernel = _variable_with_weight_decay('weights',
+                                                     shape=[height, width, input.get_shape()[3].value, dim],
+                                                     stddev=5e-2,
+                                                     wd=None)
+
         conv = tf.nn.conv2d(input, kernel, [1,1,1,1], padding='SAME')
-        b = tf.get_variable("bias",shape=[dim])
-        conv = tf.nn.bias_add(conv, b)
-        conv = tf.nn.relu(conv)
+        biases = _variable_on_cpu('biases', [dim], tf.constant_initializer(0.0))
+        bias = tf.nn.bias_add(conv, biases)
+        conv1 = tf.nn.relu(bias, name=scope.name)
         _activation_summary(conv)
-    return (conv)
+    return (conv1)
 
 def get_pool_and_lrn(input, num, ksize=2, stride=2):
         l = tf.nn.max_pool(input, ksize=[1, ksize, ksize, 1], strides=[1, stride, stride, 1],
