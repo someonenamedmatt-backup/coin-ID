@@ -89,7 +89,7 @@ class TFModel(object):
                    checkpoint_path = os.path.join(self.save_dir, 'model.ckpt')
                    saver.save(sess, checkpoint_path, global_step=step)
 
-    def fit(self, coinlabel, total_epochs = 100, grade = True, use_logit = False,load_save = False, do = True, balance_classes = False, weight_decay = .0004):
+    def fit(self, coinlabel, total_epochs = 25, grade = True, use_logit = False,load_save = False, do = True, balance_classes = False, weight_decay = .0004):
     #name labels say Grade = False
       with tf.Graph().as_default():
         #weight the classes for inbalance puproses
