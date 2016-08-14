@@ -18,7 +18,7 @@ class Coin:
         '''
         self.img = img
         self.rad = rad
-        
+
     def save(self, file_name):
         #saves as filename
         #in npy format
@@ -31,20 +31,14 @@ class Coin:
         self.rad = coin.rad
         return self
 
-    def make_from_image(self, file_name, crop = False, size = (128,128)):
+    def make_from_image(self, file_name, size = (64,64)):
         #creates a new coin from filename
         #if crop is true then we attempt to find the cirlce and crop out the rest
         #if something doesn't work then it returns false
-        try:
-            img = misc.imread(file_name, mode = 'RGB')
-        except:
-            return False
-        if crop:
-            img = _find_circle(img)
-        self.img = _resize_image(img,size)
-        if type(self.img) == bool:
-            return False
-        self.rad = _convert_to_radian(self.img)
+        self.img = misc.imread(file_name, mode = 'RGB')
+        self.cr = _resize_image(_find_circle(self.img),size)
+        self.img = misc.imresize(self.img,size)/256.0
+        self.rad = _convert_to_radian(self.cr)
         return self
 
 '''
