@@ -29,7 +29,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
         biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
         bias = tf.nn.bias_add(conv, biases)
         conv1 = tf.nn.relu(bias, name=scope.name)
-        tfhelpers._activation_summary(conv1)
+        tf_helpers._activation_summary(conv1)
 
     # pool1
     pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
@@ -48,7 +48,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
         biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.1))
         bias = tf.nn.bias_add(conv, biases)
         conv2 = tf.nn.relu(bias, name=scope.name)
-        tfhelpers._activation_summary(conv2)
+        tf_helpers._activation_summary(conv2)
 
     # norm2
     norm2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
@@ -66,7 +66,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
                                               stddev=0.04, wd=0.004)
         biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
         local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
-        tfhelpers._activation_summary(local3)
+        tf_helpers._activation_summary(local3)
 
     # local4
     with tf.variable_scope('local4') as scope:
@@ -74,7 +74,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
                                               stddev=0.04, wd=0.004)
         biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
         local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
-        tfhelpers._activation_summary(local4)
+        tf_helpers._activation_summary(local4)
 
     # softmax, i.e. softmax(WX + b)
     with tf.variable_scope('softmax_linear') as scope:
@@ -83,7 +83,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
         biases = _variable_on_cpu('biases', [n_labels],
                                   tf.constant_initializer(0.0))
         softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
-        tfhelpers._activation_summary(softmax_linear)
+        tf_helpers._activation_summary(softmax_linear)
 
     return softmax_linear
 
