@@ -19,12 +19,12 @@ def encode_rad(input, n_labels, do=True, weight_decay = 0.04, batch_size= 100):
 
 
 
-def encode_img(input, n_labels, do=True, batch_size = 100):
+def encode_img(input, n_labels, do=True, batch_size = 100, weight_decay = .004):
     with tf.variable_scope('conv1') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              shape=[5, 5, 3, 64],
                                              stddev=5e-2,
-                                             wd=0.0)
+                                             wd=None)
         conv = tf.nn.conv2d(input, kernel, [1, 1, 1, 1], padding='SAME')
         biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
         bias = tf.nn.bias_add(conv, biases)
@@ -37,13 +37,15 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
     # norm1
     norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                     name='norm1')
+    if do:
+        norm1 = tf.nn.dropout(norm1,.5)
 
     # conv2
     with tf.variable_scope('conv2') as scope:
         kernel = _variable_with_weight_decay('weights',
                                          shape=[5, 5, 64, 64],
                                          stddev=5e-2,
-                                         wd=0.0)
+                                         wd=None)
         conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
         biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.1))
         bias = tf.nn.bias_add(conv, biases)
@@ -63,15 +65,15 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
         reshape = tf.reshape(pool2, [batch_size, -1])
         dim = reshape.get_shape()[1].value
         weights = _variable_with_weight_decay('weights', shape=[dim, 384],
-                                              stddev=0.04, wd=0.004)
+                                              stddev=0.04, wd=weight_decay)
         biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
         local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
         tf_helpers._activation_summary(local3)
-
+    local3 = tf.nn.dropout(local3,.5)
     # local4
     with tf.variable_scope('local4') as scope:
         weights = _variable_with_weight_decay('weights', shape=[384, 192],
-                                              stddev=0.04, wd=0.004)
+                                              stddev=0.04, wd=weight_decay)
         biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
         local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
         tf_helpers._activation_summary(local4)
@@ -79,7 +81,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100):
     # softmax, i.e. softmax(WX + b)
     with tf.variable_scope('softmax_linear') as scope:
         weights = _variable_with_weight_decay('weights', [192, n_labels],
-                                              stddev=1/192.0, wd=0.0)
+                                              stddev=1/192.0, wd=None)
         biases = _variable_on_cpu('biases', [n_labels],
                                   tf.constant_initializer(0.0))
         softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
