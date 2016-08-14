@@ -1,16 +1,40 @@
 from model.tfmodel import TFModel
 from src.coinclasses.coinlabel import CoinLabel
-from model import model3c2d
-import cPickle as pickle
-import os
+from model import model3c2d as model
 
-def main():
-        tfm = TFModel(model3c2d.encode_rad, 'rad_cropped_3c2d')
-        coinlabel = CoinLabel('/data2/processed/cropped/', '/home/ubuntu/coin/data/IDlabel.csv',
-                                'rad', 'grade_lbl', random_state = model3c2d.SEED)
-        test = tfm.fit(coinlabel, 100)
 
-        # tfm.evaluate(coinlabel)
+def train_model(label, save_name, coin_prop ):
+    coinlabel = CoinLabel('/data/'+coin_prop, '/home/ubuntu/coin-ID/data/IDlabel.csv',
+                                            coin_prop, label, random_state = model.SEED)
+    if coin_prop == 'rad':
+        tfm =  TFModel(model.encode_rad, '/home/ubuntu/coin-ID/data/saves/' + save_name)
+    else:
+        tfm =  TFModel(model.encode_img, '/home/ubuntu/coin-ID/data/saves/' + save_name)
+    return coinlabel, tfm
+
 
 if __name__ == '__main__':
-    main()
+    if sys.argv[1] == '1':
+        tfm, coinlabel = train_model('grade_lbl', 'm_rad_v' + argv[2], 'rad')
+        tfm.fit(coinlabel)
+        tfm.evaluate(coinlabel)
+    if sys.argv[1] == '2':
+        tfm, coinlabel = train_model('grade_lbl', 'm_cr_v' + argv[2], 'cr')
+        tfm.fit(coinlabel)
+        tfm.evaluate(coinlabel)
+    if sys.argv[1] == '3':
+        tfm, coinlabel = train_model('grade_lbl', 'm_cr_log_v' + argv[2], 'cr')
+        tfm.fit(coinlabel, use_logit = True)
+        tfm.evaluate(coinlabel,use_logit = True)
+    if sys.argv[1] == '4':
+        tfm, coinlabel = train_model('grade_lbl', 'm_cr_no_do_v' + argv[2], 'cr')
+        tfm.fit(coinlabel)
+        tfm.evaluate(coinlabel)
+    if sys.argv[1] == '5':
+        tfm, coinlabel = train_model('grade_lbl', 'm_cr_nobalance_v' + argv[2], 'cr')
+        tfm.fit(coinlabel, balance_classes = False)
+        tfm.evaluate(coinlabel)
+    if sys.argv[1] == '6':
+        tfm, coinlabel = train_model('name_lbl', 'm_cr_name_v' + argv[2])
+        tfm.fit(coinlabel, grade = False)
+        tfm.evaluate(coinlabel, grade = False)

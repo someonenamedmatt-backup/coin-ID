@@ -206,7 +206,7 @@ class TFModel(object):
             return pred, cost
         return pred
 
-    def evaluate(self, coinlabel, grade = True, over_fit_test = False):
+    def evaluate(self, coinlabel, grade = True, over_fit_test = False, use_logit = False):
       with tf.Graph().as_default() as g:
         if over_fit_test:
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
@@ -214,6 +214,9 @@ class TFModel(object):
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True), self.batch_size)
         logits = self.encoding(feature_batch, coinlabel.n_labels, do = False)
         #find top k predictions
+        if use_logit:
+                logit_pred = self._add_logit(None, name_batch, coinlabel.n_names, coinlabel.n_grades)
+                logits =   tf.mul(logits, logit_pred)
         if grade:
             top_k_op = tf.nn.in_top_k(logits, grade_batch, 1)
         else:
@@ -294,7 +297,20 @@ class TFModel(object):
             else:
                 print('No checkpoint file found')
                 return
+            coord = tf.train.Coordinator()
+                # Restore the moving average version of the learned variables for eval.
+            try:
+                threads = []
+                for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
+                    threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
+                                     start=True))
+                predictions = sess.run([predict])
+
+            except Exception as e:  # pylint: disable=broad-except
+                coord.request_stop(e)
+            coord.request_stop()
+            coord.join(threads, stop_grace_period_secs=10)
             predictions = sess.run([predict])
       for f in map(lambda name: name + '_tmp', file_list):
           os.remove(f)
-      return predictions
+      return map(lambda item: item.indices[0,0], predictions)
