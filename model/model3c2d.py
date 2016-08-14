@@ -3,7 +3,7 @@ import tf_helpers
 
 SEED = 22
 
-def encode_rad(input, n_labels, do=True, weight_decay = 0.04, batch_size):
+def encode_rad(input, n_labels, do=True, weight_decay = 0.04, batch_size= 100):
     #do is dropouts, true for training, false for testing
     l = tf_helpers.get_radian_conv("conv1",input,width = 3,height = 3, dim = 32)
     l = tf_helpers.get_radian_pool(l,1, ksize = 2)
@@ -19,7 +19,7 @@ def encode_rad(input, n_labels, do=True, weight_decay = 0.04, batch_size):
 
 
 
-def encoding_img(input, n_labels, do=True, batch_size):
+def encoding_img(input, n_labels, do=True, batch_size = 100):
     with tf.variable_scope('conv1') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              shape=[5, 5, 3, 64],
