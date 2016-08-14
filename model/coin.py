@@ -8,27 +8,17 @@ from scipy import misc
 import multiprocessing as mp
 import pandas as pd
 import cv2
+
 class Coin:
     #class for storing info about a single coin
-    def __init__(self, img = None, rad = None):
+    def __init__(self, img = None, rad = None, cr = None):
         '''
         img is imread image (RGB)
         rad is radially transformmed img
         '''
+        self.cr = cr
         self.img = img
         self.rad = rad
-
-    def save(self, file_name):
-        #saves as filename
-        #in npy format
-        np.save(file_name,self)
-
-    def load(self, file_name):
-        #loads a npy coin file
-        coin = np.load(file_name).item()
-        self.img = coin.img
-        self.rad = coin.rad
-        return self
 
     def make_from_image(self, file_name, size = (64,64)):
         #creates a new coin from filename
@@ -38,8 +28,19 @@ class Coin:
         self.cr = _resize_image(_find_circle(self.img),size)
         self.img = misc.imresize(self.img,size)/256.0
         self.rad = _convert_to_radian(self.cr)
+        self.dct = {'img': self.img, 'rad' : self.rad, 'cr':self.cr}
         return self
 
+    def __getitem__(self, key):
+        if key == 'rad':
+            return self.rad
+        elif key == 'cr':
+            return self.cr
+        else:
+            return self.img
+
+    def binarize_coin(self, filename, coin_prop, grade_lbl = -1, name_lbl = -1):
+        np.append(self[coin_prop].flatten(),[grade_lbl,name_lbl]).tofile(filename)
 
 '''
 HELPER FUNCTIONS
@@ -76,8 +77,6 @@ def _find_circle(img):
     x, y, r = np.round(circles[0,0]).astype(int)
     cv2.circle(img, center = (x, y), radius = r+120, color= (255, 255, 255), thickness = 240)
     return img
-
-
 
 def _resize_image(img, size = (128,128)):
     #takes an image (length x width x 3 with rgb colors)

@@ -13,10 +13,7 @@ class CoinLabel:
     #designed to work with a tf FIFO queue
 
     def __init__(self, img_folder, csv_file, coin_prop, label_col, test_pct = .2, random_state = 22):
-        #coin prop is either 'img' or 'rad'
-        if coin_prop not in ['img','rad']:
-            print "coin_prop must be either 'img' or 'rad'"
-            raise NameError
+        #coin prop is either 'img' or 'rad' or 'cr'
         if img_folder[-1] != '/':
             img_folder += '/'
         df = pd.read_csv(csv_file)
@@ -25,8 +22,8 @@ class CoinLabel:
         if "grade_lbl" in df.columns:
             self.n_grades = len(df['grade_lbl'].unique())
         df['file_names'] = map((lambda x:  str(x)),df['ID'])
-        df = df[df['file_names'].isin(set(df['file_names']).intersection(set(os.listdir(img_folder))))]
-        df['file_names'] = map(lambda x: img_folder + str(int(x)) + '/' + coin_prop ,df['file_names'])
+        df = df[df['file_names'].isin(set(df['file_names']).intersection(set(os.listdir(img_folder+'/'+coin_prop))))]
+        df['file_names'] = map(lambda x: img_folder  +coin_prop+ '/' + str(int(x))  ,df['file_names'])
         df.rename(columns={label_col: 'label'}, inplace=True)
         df.set_index('file_names', inplace = True)
         self.train_df, self.test_df = train_test_split(df['label'],

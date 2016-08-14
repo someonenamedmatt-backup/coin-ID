@@ -14,7 +14,7 @@ def encode_rad(input, n_labels, do=True, weight_decay = 0.04, batch_size= 100):
     l = tf_helpers.get_dense_layer_relu("dense1",l,256, wd = weight_decay)
     if do:
        l = tf.nn.dropout(l,.5)
-    l = tf_helpers:.get_softmax_linear_layer("softmax_linear",l,n_labels)
+    l = tf_helpers.get_softmax_linear_layer("softmax_linear",l,n_labels)
     return l
 
 

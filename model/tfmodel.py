@@ -8,7 +8,7 @@ import threading
 import time
 from datetime import datetime
 import math
-# from src.coinclasses.coin import Coin
+from coin import Coin
 
 class TFModel(object):
     def __init__(self, encoding, save_dir, batch_size = 30, num_epochs_per_decay = 25, moving_average_decay = .9999):
@@ -196,12 +196,12 @@ class TFModel(object):
         return train_op
 
     def _add_logit(self, grade_batch,name_batch, num_names, num_grades):
-        one_hot_names = tf.one_hot(name_batch, num_names,dtype = tf.float32,  axis = 1)
+        one_hot_names = tf.one_hot(name_batch, num_names,dtype = tf.int32,  axis = 1)
         W = tf.Variable(tf.zeros([num_names, num_grades]))
         b = tf.Variable(tf.zeros([num_grades]))
         pred = tf.nn.softmax(tf.matmul(one_hot_names, W) + b, name = "wide_prediction") # Softmax
-        if name_batch is not None:
-            one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.float32,  axis = 1)
+        if grade_batch is not None:
+            one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.int32,  axis = 1)
             cost = tf.reduce_mean(-tf.reduce_sum(one_hot_grades*tf.log(pred), reduction_indices=1), name = "wide_cross_entropy")
             return pred, cost
         return pred
@@ -269,30 +269,32 @@ class TFModel(object):
             coord.join(threads, stop_grace_period_secs=10)
             return precision
 
-    # def predict_one(img_file, name_lbl = None, crop = False, rad = False, n_labels = 4):
-    #     #if a name label is set we're assuming a wide and deep model
-    #   with tf.Graph().as_default() as g:
-    #     if rad:
-    #         coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).rad
-    #     else:
-    #         coin = Coin().make_from_image(img_file, size = tfinput.SIZE, crop).img
-    #     logits = self.encoding(coin, n_labels, do = False)
-    #     if name_lbl is not None:
-    #         logit_pred = self._add_logit(grade_batch = None,name_batch, coinlabel.n_names, coinlabel.n_grades)
-    #         logits =   tf.mul(logits, logit_pred)
-    #     predict = tf.nn.top_k(logits)
-    #     #find top k predictions
-    #     variable_averages = tf.train.ExponentialMovingAverage(
-    #                                     self.moving_average_decay)
-    #     variables_to_restore = variable_averages.variables_to_restore()
-    #     with tf.Session() as sess:
-    #         ckpt = tf.train.get_checkpoint_state(self.save_dir)
-    #         if ckpt and ckpt.model_checkpoint_path:
-    #             # Restores from checkpoint
-    #             saver.restore(sess, ckpt.model_checkpoint_path)
-    #             # extract global_step from it.
-    #         else:
-    #             print('No checkpoint file found')
-    #             return
-    #         prediction = sess.run([predict])
-    #     return prediction
+    def predict_images(self, file_list, conversion_prop, name_lbls = None, n_labels = 4):
+      #requires a list of same len as file_list for implementing a wide and deep model
+      with tf.Graph().as_default() as g:
+        feature_batch, _, name_batch = tfinput.input(file_list, make_coins = True, name_lbls = name_lbls,
+                                                                coin_prop = conversion_prop, batch_size = len(file_list))
+        logits = self.encoding(feature_batch, n_labels, batch_size = 1, do = False, weight_decay = 0)
+        if name_lbls is not None:
+            logit_pred = self._add_logit(None,name_batch, num_names = 60, num_grades = 4)
+            logits =   tf.mul(logits, logit_pred)
+        predict = tf.nn.top_k(logits)
+
+        #find top k predictions
+        variable_averages = tf.train.ExponentialMovingAverage(
+                                        self.moving_average_decay)
+        variables_to_restore = variable_averages.variables_to_restore()
+        saver = tf.train.Saver()
+        with tf.Session() as sess:
+            ckpt = tf.train.get_checkpoint_state(self.save_dir)
+            if ckpt and ckpt.model_checkpoint_path:
+                # Restores from checkpoint
+                saver.restore(sess, ckpt.model_checkpoint_path)
+                # extract global_step from it.
+            else:
+                print('No checkpoint file found')
+                return
+            predictions = sess.run([predict])
+      for f in map(lambda name: name + '_tmp', file_list):
+          os.remove(f)
+      return predictions
