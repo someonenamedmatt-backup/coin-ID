@@ -1,0 +1,10 @@
+{% extends "basic.html" %}
+{% block body %}
+<h1>Submit Picture</h1>
+
+<form action="/classify" method="post" enctype="multipart/form-data" id="upload-form">
+    <input type="file" name="imagefile" id="imagefile"/>
+    <input type="submit" />
+  </form>
+
+{% endblock %}
