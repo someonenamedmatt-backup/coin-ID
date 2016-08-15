@@ -199,9 +199,9 @@ class TFModel(object):
         one_hot_names = tf.one_hot(name_batch, num_names,  axis = 1)
         W = tf.Variable(tf.zeros([num_names, num_grades]))
         b = tf.Variable(tf.zeros([num_grades]))
-        pred = tf.nn.softmax(tf.matmul(tf.castone_hot_names, W) + b, name = "wide_prediction") # Softmax
+        pred = tf.nn.softmax(tf.matmul(one_hot_names, W) + b, name = "wide_prediction") # Softmax
         if grade_batch is not None:
-            one_hot_grades = tf.one_hot(grade_batch, num_grades,dtype = tf.int32,  axis = 1)
+            one_hot_grades = tf.one_hot(grade_batch, num_grades,  axis = 1)
             cost = tf.reduce_mean(-tf.reduce_sum(one_hot_grades*tf.log(pred), reduction_indices=1), name = "wide_cross_entropy")
             return pred, cost
         return pred
