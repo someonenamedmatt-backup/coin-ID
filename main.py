@@ -20,7 +20,6 @@ if __name__ == '__main__':
             tfm.fit(coinlabel)
         score = tfm.evaluate(coinlabel)
         print score
-        
     if sys.argv[1] == '2':
         tfm, coinlabel = train_model('grade_lbl', 'm_cr_v' + sys.argv[2], 'cr')
         if '-t' in sys.argv:
@@ -50,4 +49,18 @@ if __name__ == '__main__':
         if '-t' in sys.argv:
             tfm.fit(coinlabel, grade = False)
         score = tfm.evaluate(coinlabel, grade = False)
+        print score
+
+    if sys.argv[1] == '7':
+        tfm, coinlabel = train_model('name_lbl', 'm_img_name_v' + sys.argv[2], 'img')
+        if '-t' in sys.argv:
+            tfm.fit(coinlabel, grade = False)
+        score = tfm.evaluate(coinlabel, grade = False)
+        print score
+
+    if sys.argv[1] == '8':
+        tfm, coinlabel = train_model('grade_lbl', 'm_img_logit_v' + sys.argv[2], 'img')
+        if '-t' in sys.argv:
+            tfm.fit(coinlabel)
+        score = tfm.evaluate(coinlabel)
         print score
