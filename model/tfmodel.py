@@ -11,7 +11,7 @@ import math
 from coin import Coin
 
 class TFModel(object):
-    def __init__(self, encoding, save_dir, batch_size = 30, num_epochs_per_decay = 25, moving_average_decay = .9999):
+    def __init__(self, encoding, save_dir, batch_size = 100, num_epochs_per_decay = 25, moving_average_decay = .9999):
         self.encoding = encoding
         self.batch_size = batch_size
         self.num_epochs_per_decay = num_epochs_per_decay
@@ -208,6 +208,7 @@ class TFModel(object):
 
     def evaluate(self, coinlabel, grade = True, over_fit_test = False, use_logit = False):
       with tf.Graph().as_default() as g:
+
         if over_fit_test:
             feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
         else:
