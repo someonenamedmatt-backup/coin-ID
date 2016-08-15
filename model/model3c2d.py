@@ -20,6 +20,7 @@ def encode_rad(input, n_labels, do=True, weight_decay = 0.04, batch_size= 100):
 
 
 def encode_img(input, n_labels, do=True, batch_size = 100, weight_decay = .004):
+    print input.get_shape()
     with tf.variable_scope('conv1') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              shape=[5, 5, 3, 64],
