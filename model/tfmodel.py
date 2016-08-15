@@ -222,10 +222,11 @@ class TFModel(object):
             top_k_op = tf.nn.in_top_k(logits, grade_batch, 1)
         else:
             top_k_op = tf.nn.in_top_k(logits, name_batch, 1)
-        variable_averages = tf.train.ExponentialMovingAverage(
+        # variable_averages = tf.train.ExponentialMovingAverage(
                                     self.moving_average_decay)
-        variables_to_restore = variable_averages.variables_to_restore()
-        saver = tf.train.Saver(variables_to_restore)
+        # variables_to_restore = variable_averages.variables_to_restore()
+        # saver = tf.train.Saver(variables_to_restore)
+        saver = tf.train.Saver()
         summary_op = tf.merge_all_summaries()
         summary_writer = tf.train.SummaryWriter(self.save_dir, g)
         with tf.Session() as sess:
