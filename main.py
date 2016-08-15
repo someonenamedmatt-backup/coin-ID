@@ -42,7 +42,7 @@ if __name__ == '__main__':
             tfm.fit(coinlabel, balance_classes = False)
         tfm.evaluate(coinlabel)
     if sys.argv[1] == '6':
-        tfm, coinlabel = train_model('name_lbl', 'm_cr_name_v' + sys.argv[2])
+        tfm, coinlabel = train_model('name_lbl', 'm_cr_name_v' + sys.argv[2], 'cr')
         if '-t' in sys.argv:
             tfm.fit(coinlabel, grade = False)
         tfm.evaluate(coinlabel, grade = False)
