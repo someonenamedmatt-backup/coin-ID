@@ -46,11 +46,11 @@ class CoinLabel:
             lst.extend(self.train_df[self.train_df == value].index.values[:5])
         return lst
 
-    def get_file_list(self, test = True):
+    def get_file_list(self, test = True, batch_size = 100):
         if test:
-            return list(self.test_df.index.values)
+            return list(np.random.choice(self.test_df.index.values),len(self.test_df.index.values)/batch_size)
         else:
-            return list(self.train_df.index.values)
+            return list(np.random.choice(self.train_df.index.values),len(self.test_df.index.values)/batch_size)
 
     def get_balanced_class_filelist(self, num_per_class, test = True):
         lst = []
