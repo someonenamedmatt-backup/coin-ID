@@ -30,7 +30,7 @@ def encode_img(input, n_labels, do=True, batch_size = 100, weight_decay = .004):
         bias = tf.nn.bias_add(conv, biases)
         conv1 = tf.nn.relu(bias, name=scope.name)
         tf_helpers._activation_summary(conv1)
-
+    print conv1.get_shape()
     # pool1
     pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
                          padding='SAME', name='pool1')
@@ -51,13 +51,17 @@ def encode_img(input, n_labels, do=True, batch_size = 100, weight_decay = .004):
         bias = tf.nn.bias_add(conv, biases)
         conv2 = tf.nn.relu(bias, name=scope.name)
         tf_helpers._activation_summary(conv2)
+    print conv2.get_shape()
 
     # norm2
     norm2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                     name='norm2')
+    print norm2.get_shape()
+
     # pool2
     pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],
                          strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+    print pool2.get_shape()
 
     # local3
     with tf.variable_scope('local3') as scope:
