@@ -380,3 +380,63 @@ class TFModel(object):
       for f in map(lambda name: name + '_tmp', file_list):
           os.remove(f)
       return map(lambda item: item.indices[0,0], predictions)
+
+
+    def evaluate_2(self, coinlabel, grade = True, over_fit_test = False, use_logit = False):
+      with tf.Graph().as_default() as g:
+
+        if over_fit_test:
+            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_overfit_test_list(), self.batch_size)
+        else:
+            feature_batch, grade_batch, name_batch = tfinput.input(coinlabel.get_file_list(test = True), self.batch_size)
+        logits = self.encoding(feature_batch, coinlabel.n_labels, do = False)
+        #find top k predictions
+        if use_logit:
+                logit_pred = self._add_logit(None, name_batch, coinlabel.n_names, coinlabel.n_grades)
+                logits =   tf.mul(logits, logit_pred)
+        if grade:
+            top_k_op = tf.nn.in_top_k(logits, grade_batch, 1)
+        else:
+            top_k_op = tf.nn.in_top_k(logits, name_batch, 1)
+        # variable_averages = tf.train.ExponentialMovingAverage(
+                                    # self.moving_average_decay)
+        # variables_to_restore = variable_averages.variables_to_restore()
+        # saver = tf.train.Saver(variables_to_restore)
+        saver = tf.train.Saver()
+        summary_op = tf.merge_all_summaries()
+        summary_writer = tf.train.SummaryWriter(self.save_dir, g)
+        with tf.Session() as sess:
+            ckpt = tf.train.get_checkpoint_state(self.save_dir)
+            if ckpt and ckpt.model_checkpoint_path:
+                # Restores from checkpoint
+                saver.restore(sess, ckpt.model_checkpoint_path)
+                # Assuming model_checkpoint_path looks something like:
+                #   /my-favorite-path/cifar10_train/model.ckpt-0,
+                # extract global_step from it.
+                global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
+            else:
+                print('No checkpoint file found')
+                return
+
+            coord = tf.train.Coordinator()
+                # Restore the moving average version of the learned variables for eval.
+            try:
+                threads = []
+                for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
+                    threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
+                                     start=True))
+                if over_fit_test:
+                    num_iter = 20
+                else:
+                    num_iter = int(math.ceil(len(coinlabel.test_df) / self.batch_size))
+                true_count = 0  # Counts the number of correct predictions.
+                total_sample_count = num_iter * self.batch_size
+                step = 0
+                ans = []
+                while step < num_iter and not coord.should_stop():
+                    ans.append(sess.run([logits,grade_batch]))
+            except Exception as e:  # pylint: disable=broad-except
+                coord.request_stop(e)
+            coord.request_stop()
+            coord.join(threads, stop_grace_period_secs=10)
+            return ans
