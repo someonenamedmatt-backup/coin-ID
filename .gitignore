@@ -2,6 +2,7 @@
 data/*
 !.gitignore
 !IDnamegrade.csv
+!data/presentation
 model/saves/*
 !.gitignore
 *.ckpt
