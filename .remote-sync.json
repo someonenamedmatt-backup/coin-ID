@@ -2,7 +2,7 @@
   "uploadOnSave": true,
   "useAtomicWrites": false,
   "deleteLocal": false,
-  "hostname": "54.197.98.27",
+  "hostname": "54.196.51.47",
   "port": "22",
   "target": "/home/ubuntu/coin/",
   "ignore": [
