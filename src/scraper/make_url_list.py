@@ -44,10 +44,10 @@ def _get_starting_pages():
     '''
     searches = []
     soup = BeautifulSoup(requests.get(coin_start_page).text,'html.parser')
-    coin_pages = soup.findAll('li', {'data-node-id':True})[1:-7]
+    coin_pages = soup.findAll('li', {'class':"b-block-list__element"})[2:-9]
     coin_pages = [item.find('a').get('href') for item in coin_pages]
     for i, url in enumerate(coin_pages):
-        if i in [3,8,12,14, 15]:
+        if i in [3,8,12,14]:
             searches.append(url)
         else:
             subsoup = BeautifulSoup(requests.get(url).text,'html.parser')
