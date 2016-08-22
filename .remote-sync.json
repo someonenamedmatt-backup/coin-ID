@@ -2,9 +2,9 @@
   "uploadOnSave": true,
   "useAtomicWrites": false,
   "deleteLocal": false,
-  "hostname": "54.196.51.47",
+  "hostname": "54.196.28.17",
   "port": "22",
-  "target": "/home/ubuntu/coin/",
+  "target": "/home/ubuntu/coin-id/",
   "ignore": [
     ".git/**",
     "/remote-sync.json"

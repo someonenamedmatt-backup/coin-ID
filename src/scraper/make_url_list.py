@@ -22,10 +22,10 @@ def make_url_csv(filename):
     OUTPUT: saves a csv of all listings
     '''
     print "Making URL List"
-    search_terms =  get_starting_pages()
+    search_terms =  _get_starting_pages()
     jobs = []
     for term in search_terms:
-        thread = threading.Thread(name=term, target=search_one_page, args=(term, ))
+        thread = threading.Thread(name=term, target=_search_one_page, args=(term, ))
         jobs.append(thread)
         thread.start()
     for j in jobs:
@@ -36,7 +36,7 @@ def make_url_csv(filename):
     return df
 
 
-def get_starting_pages():
+def _get_starting_pages():
     '''
     Searches through all subcategories to get the base urls of types of coins
     INPUT: NONE
@@ -56,7 +56,7 @@ def get_starting_pages():
             searches.extend(subcoin)
     return searches
 
-def build_list_of_links(link):
+def _build_list_of_links(link):
     '''
     Finds all the ebay listing from a given page
     INPUT: url of an ebay search page
@@ -70,7 +70,7 @@ def build_list_of_links(link):
      return(list_of_links)
 
 
-def make_url_generator(starting_link):
+def _make_url_generator(starting_link):
     '''
     Creates a generator of additional pages of ebay listings
     INPUT: string containing the start of a category of ebay listings
@@ -82,19 +82,19 @@ def make_url_generator(starting_link):
         i += 1
         yield link(i)
 
-def search_one_page(url):
+def _search_one_page(url):
     '''
     Finds all the URLS for a given base search
     INPUT: base url (string), multiprocessing list in namespace
     OUTPUT: extends multiprocessed list of strings
     '''
-    link_generator = make_url_generator(url)
+    link_generator = _make_url_generator(url)
     link = link_generator.next()
-    temp_link_list = build_list_of_links(link)
+    temp_link_list = _build_list_of_links(link)
     link_list = temp_link_list[:]
     while  len(temp_link_list) >0:
         link = link_generator.next()
-        temp_link_list = build_list_of_links(link)
+        temp_link_list = _build_list_of_links(link)
         link_list.extend(temp_link_list)
         if len(link_list)>10000:
             break
