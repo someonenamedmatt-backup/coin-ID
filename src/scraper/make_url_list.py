@@ -62,12 +62,12 @@ def _build_list_of_links(link):
     INPUT: url of an ebay search page
     OUTPUT: List containing the urls of all ebay listings from a given search page
     '''
-     page = requests.get(link).text
-     soup = BeautifulSoup(page,'html.parser')
-     list_of_links = []
-     for item in soup.findAll('a', {'class':'vip'}):
-         list_of_links.append(item.get('href'))
-     return(list_of_links)
+    page = requests.get(link).text
+    soup = BeautifulSoup(page,'html.parser')
+    list_of_links = []
+    for item in soup.findAll('a', {'class':'vip'}):
+        list_of_links.append(item.get('href'))
+    return(list_of_links)
 
 
 def _make_url_generator(starting_link):
