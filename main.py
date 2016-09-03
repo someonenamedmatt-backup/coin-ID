@@ -3,6 +3,8 @@ from src.coinclasses.coinlabel import CoinLabel
 from src.model import model3c2d as model
 import sys
 
+#Main file for training different model variants
+
 def train_model(label, save_name, coin_prop ):
     coinlabel = CoinLabel('/data', '/home/ubuntu/coin-ID/data/IDnamegrade.csv',
                                             coin_prop, label, random_state = model.SEED)
