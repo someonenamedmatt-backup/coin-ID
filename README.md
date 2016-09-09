@@ -1,7 +1,8 @@
 # Coin-ID
-#### <i> Using Neural Networks to quickly and easily grade rare coins
+####  *Using Neural Networks to quickly and easily grade rare coins*
 ___
-
+**NOTE**: This version of the repository is meant as a proof of concept and example of the code. If you'd like to discuss the current version please contact me at my [website](mattschiffman.com).
+___
 This repository is divided into 3 sections - app, data, and src.  
 
 ## 1. app
